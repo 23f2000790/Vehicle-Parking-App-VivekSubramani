@@ -1,2 +1,17 @@
-# made repo, finishing milestone 0...
-#added collaborator, milestone 0 complete
+from flask import Flask
+from application.database import db
+from application.config import LocalDevelopmentConfig
+from application.models import Users
+from flask_security import Security, SQLAlchemyUserDatastore
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(LocalDevelopmentConfig)
+    db.init_app(app)
+    app.app_context().push()
+    return app
+
+app = create_app()
+
+if __name__ == '__main__':
+    app.run()
