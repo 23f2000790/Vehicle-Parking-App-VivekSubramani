@@ -38,5 +38,21 @@ def login():
     
     access_token = create_access_token(identity = user)
     return jsonify(access_token = access_token)
-    
+
+
+def type_based_access(valid_type):
+    def wrapper(func):
+        @jwt_required()
+        def decorator(*args, **kwargs):
+            if current_user.type != valid_type:
+                return jsonify(message = "You don't have access to this page"), 403
+            return func(*args, **kwargs)
+        return decorator
+    return wrapper
+
+@app.route('/admin_dashboard')
+@type_based_access("admin")
+def admin_dashboard():
+    return "you have access"
+
 
