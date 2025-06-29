@@ -7,12 +7,15 @@ from datetime import datetime, timedelta
 
 
 
-@app.route('/register',methods=['POST'])
+@app.route('/api/register',methods=['POST'])
 def register():
     email = request.json.get('email')
     username = request.json.get('username')
     password = request.json.get('password')
     phone_no = request.json.get('phone_no')
+
+    if not email or not username or not password or not phone_no:
+        return jsonify(message = "Please enter all fields"), 401
 
     users = Users.query.filter((Users.username == username) | (Users.email == email)).first()
     if users:
@@ -25,7 +28,7 @@ def register():
     return jsonify({"msg":"User created successfully"}), 201
 
 
-@app.route('/login',methods=['POST'])
+@app.route('/api/login',methods=['POST'])
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
