@@ -15,7 +15,7 @@ class Parkinglots(db.Model):
     cityname = db.Column(db.String(), nullable = False)
     address = db.Column(db.String(), unique = True, nullable = False)
     pincode = db.Column(db.String(), nullable = False)
-    maxslots = db.Column(db.Integer, nullable = False)
+    maxspots = db.Column(db.Integer, nullable = False)
     priceperhour = db.Column(db.Integer, nullable = False)
     status = db.Column(db.Boolean, nullable = False)
     parkingspot = db.relationship('Parkingspot', backref = 'parkinglots', lazy = True)
