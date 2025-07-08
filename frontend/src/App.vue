@@ -1,9 +1,12 @@
 <script setup>
-import Login from './components/Login.vue'
+import Navbar from './components/Navbar.vue'
+import Footer from './components/Footer.vue';
 </script>
 
 <template>
-  <Login />
+  <Navbar></Navbar>
+  <RouterView></RouterView>
+  <Footer></Footer>
 </template>
 
 <style scoped>

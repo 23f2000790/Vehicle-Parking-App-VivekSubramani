@@ -13,7 +13,10 @@ export default{
     methods: {
         Loginuser(event){
             event.preventDefault()
-            const response = axios.post("http://127.0.0.1:5000/api/login", JSON.stringify(this.formdata), {
+            const response = axios.post("http://127.0.0.1:5000/api/login", {
+                username: this.formdata.username,
+                password: this.formdata.password
+            }, {
                 headers:{
                     "Content-Type" : "application/json",
                     "Access-Control-Allow-Origin" : "*",
@@ -52,7 +55,7 @@ export default{
                     <input type="submit" class="btn btn-primary" value="Login">
                 </div>
             </form>
-            <p id="centre-text">Are you a new User? <a href="">Register now.</a></p> 
+            <p id="centre-text">Are you a new User? <button @click="this.$router.push('/register')">Register now.</button></p> 
         </div>
     </div>
 

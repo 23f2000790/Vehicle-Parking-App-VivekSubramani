@@ -26,7 +26,7 @@ def register():
     db.session.add(newuser)
     db.session.commit()
 
-    return jsonify({"msg":"User created successfully"}), 201
+    return jsonify({"msg":"Account created successfully, Please Login"}), 201
 
 
 @app.route('/api/login',methods=['POST'])
@@ -56,29 +56,30 @@ def type_based_access(valid_type):
     return wrapper
 
 @app.route('/api/dashboard')
-@type_based_access("admin")
+@jwt_required()
 def dashboard():
-    lots = Parkinglots.query.all()
-    spots = Parkingspot.query.all()
-    output_list = []
-    for i in lots:
-        no_of_spots = Parkingspot.query.filter_by(lotid = i.id).all()
-        output_spots = {}
-        for j in no_of_spots:
-            output_spots[j.id] = j.status
-        output_dict = {
-            "lot_id" : i.id,
-            "city" : i.cityname,
-            "pincode" : i.pincode,
-            "spots" : len(no_of_spots),
-            "price" : i.priceperhour,
-            "status_dict" : output_spots
-        }
-        output_list.append(output_dict)
-    return jsonify({
-        "username" : current_user.username,
-        "data" : output_list
-    })
+    if current_user.role == "admin":
+        lots = Parkinglots.query.all()
+        output_list = []
+        for i in lots:
+            no_of_spots = Parkingspot.query.filter_by(lotid = i.id).all()
+            output_spots = {}
+            for j in no_of_spots:
+                output_spots[j.id] = j.status
+            output_dict = {
+                "lot_id" : i.id,
+                "city" : i.cityname,
+                "pincode" : i.pincode,
+                "spots" : len(no_of_spots),
+                "price" : i.priceperhour,
+                "status_dict" : output_spots
+            }
+            output_list.append(output_dict)
+        return jsonify({
+            "username" : current_user.username,
+            "data" : output_list
+        })
+
 
 @app.route('/api/addlot', methods = ['POST'])
 @type_based_access("admin")
@@ -145,6 +146,8 @@ def deletelot(lotid):
     db.session.delete(lot)
     db.session.commit()
     return "deleted"
+
+
 
 
 
