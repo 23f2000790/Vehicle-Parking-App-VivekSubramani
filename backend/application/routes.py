@@ -50,7 +50,7 @@ def type_based_access(valid_type):
         @jwt_required()
         def decorator(*args, **kwargs):
             if current_user.type != valid_type:
-                return jsonify(message = "You don't have access to this page"), 403
+                return jsonify({"msg" : "You don't have access to this page"}), 403
             return func(*args, **kwargs)
         return decorator
     return wrapper
@@ -72,6 +72,8 @@ def dashboard():
                 "pincode" : i.pincode,
                 "spots" : len(no_of_spots),
                 "price" : i.priceperhour,
+                "address" : i.address,
+                "status" : i.status,
                 "status_dict" : output_spots
             }
             output_list.append(output_dict)
@@ -123,9 +125,9 @@ def addlot():
     maxspots = request.json.get("maxspots")
     priceperhour = request.json.get("priceperhour")
     status_1 = request.json.get("status")
-    status = 0
+    status = False
     if status_1 == "active":
-        status = 1
+        status = True
     newlot = Parkinglots(cityname=cityname, address=address, pincode=pincode, maxspots=maxspots, priceperhour=priceperhour, status=status)
     db.session.add(newlot)
     db.session.commit()
@@ -147,25 +149,30 @@ def editlot(lotid):
     lot.pincode = request.json.get('pincode', lot.pincode)
     lot.maxspots = request.json.get('maxspots', lot.maxspots)
     lot.priceperhour = request.json.get("priceperhour", lot.priceperhour)
-    lot.status = request.json.get("status", lot.status)
+    status_1 = request.json.get("status")
+    if status_1 is not None:
+        if status_1 == "active":
+            lot.status = True
+        else:
+            lot.status = False
 
-    spotoccupied = Parkingspot.query.filter_by(lotid = lot.id, status = 0).all()
+    spotoccupied = Parkingspot.query.filter_by(lotid = lot.id, status = 1).all()
     if int(lot.maxspots) < len(spotoccupied):
-        return jsonify(message = "Please release the spots to update the maxspots"), 403
+        return jsonify({"msg" : "Please release the spots to update the maxspots"}), 403
     
     spots = Parkingspot.query.filter_by(lotid = lot.id).all()
     if int(lot.maxspots) < len(spots):
         for i in range((len(spots)-int(lot.maxspots))):
-            spot = Parkingspot.query.filter_by(lotid = lot.id, status = 1).first()
+            spot = Parkingspot.query.filter_by(lotid = lot.id, status = 0).first()
             db.session.delete(spot)
 
     if int(lot.maxspots) > len(spots):
         for i in range((int(lot.maxspots)-len(spots))):
-            newspot = Parkingspot(lotid = lot.id, status = 1)
+            newspot = Parkingspot(lotid = lot.id, status = 0)
             db.session.add(newspot)
             
     db.session.commit()
-    return "edited"
+    return jsonify({"msg" : "Lot edited successfully!!"}), 201
 
 
 @app.route('/api/deletelot/<int:lotid>', methods = ['DELETE'])
@@ -174,13 +181,13 @@ def deletelot(lotid):
     lot = Parkinglots.query.get(lotid)
     spots = Parkingspot.query.filter_by(lotid = lotid).all()
     for i in spots:
-        if i.status == 0:
-            return jsonify(message = "Please vacate all the spots before deleting the lot"), 403
+        if i.status == 1:
+            return jsonify({"msg" : "Please vacate all the spots before deleting the lot"}), 403
     for i in spots:
         db.session.delete(i)
     db.session.delete(lot)
     db.session.commit()
-    return "deleted"
+    return jsonify({"msg" : "Lot deleted successfully!!"}), 201
 
 
 

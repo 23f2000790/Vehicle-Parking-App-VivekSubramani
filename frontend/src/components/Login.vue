@@ -14,7 +14,7 @@ export default{
     methods: {
         Loginuser(event){
             event.preventDefault()
-            const response = axios.post("http://127.0.0.1:5000/api/login", {
+            axios.post("http://127.0.0.1:5000/api/login", {
                 username: this.formdata.username,
                 password: this.formdata.password
             }, {
@@ -40,7 +40,7 @@ export default{
         <div id = "form-body" style="color: black;">
             <h1 id="centre-text">Login Form</h1>
             <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-            <form @submit="Loginuser">
+            <form @submit.prevent="Loginuser">
                 <div class="mb-3">
                     <label for="Username" class="form-label">Username</label>
                     <input type="text" class="form-control" id="username" placeholder = "example" v-model="formdata.username">

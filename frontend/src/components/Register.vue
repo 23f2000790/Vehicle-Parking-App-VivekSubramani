@@ -23,15 +23,15 @@ export default{
                 this.errormsg = "Passwords do not match!!"
                 return
             }
-            const response = axios.post("http://127.0.0.1:5000/api/register", {
+            axios.post("http://127.0.0.1:5000/api/register", {
                 email: this.formdata.email,
                 username: this.formdata.username,
                 password: this.formdata.password,
                 phone_no: this.formdata.phone_no,
-            }, {
+            }, { headers: {
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin" : "*"
-            })
+            }})
             .then(res =>{
                 this.successmsg = res.data.msg
                 this.$router.push('/login')
@@ -51,7 +51,7 @@ export default{
                 <h1 id="centre-text">Registration Form</h1>
                 <p v-if="successmsg" class="text-success text-center">{{ successmsg }}</p>
                 <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-                <form @submit="registeruser">
+                <form @submit.prevent="registeruser">
                     <div class="mb-3">
                         <label for="fullname" class="form-label">Email</label>
                         <input type="email" class="form-control" id="fullname" v-model="formdata.email">

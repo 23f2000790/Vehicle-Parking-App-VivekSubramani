@@ -9,7 +9,9 @@ export default {
             formdata: {cityname: "", address: "", pincode: "", maxspots: "", priceperhour: "", status: ""},
             errormsg: "",
             successmsg: "",
-            showaddlot: false
+            showaddlot: false,
+            editmode: false,
+            editlotid: null
         }
     },
     mounted(){
@@ -51,30 +53,64 @@ export default {
             this.successmsg = "";
             this.formdata = {cityname: "", address: "", pincode: "", maxspots: "", priceperhour: "", status: ""}
         },
-        addlot: function(){
+        sendlot: function(){
             this.errormsg = ""
-            if (!this.formdata.cityname || !this.formdata.address || !this.formdata.pincode || !this.formdata.maxspots || !this.formdata.status || !this.formdata.priceperhour) {
-                this.errormsg = "Please enter all fields!!"
-                return
+            if (typeof this.formdata.status === "boolean") {
+                this.formdata.status = this.formdata.status ? "active" : "inactive";
             }
-            axios.post("http://127.0.0.1:5000/api/addlot", {
-                cityname: this.formdata.cityname,
-                address: this.formdata.address,
-                pincode: this.formdata.pincode,
-                maxspots: this.formdata.maxspots,
-                priceperhour: this.formdata.priceperhour,
-                maxspots: this.formdata.maxspots}, {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin" : "*",
-                    "Authorization": `Bearer ${this.token}`
+            if (this.editmode) {
+                axios.put(`http://127.0.0.1:5000/api/editlot/${this.editlotid}`, this.formdata,{ 
+                        headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin" : "*",
+                        "Authorization": `Bearer ${this.token}`
+                    }}).then(res => {
+                        this.successmsg = res.data.msg;
+                        this.openaddlotform();
+                        this.showaddlot = false;
+                        this.loaduser()
+                    }).catch(error => {
+                        this.errormsg = error.response?.data?.msg
+                    })
+            } else {
+                if (!this.formdata.cityname || !this.formdata.address || !this.formdata.pincode || !this.formdata.maxspots || !this.formdata.status || !this.formdata.priceperhour) {
+                    this.errormsg = "Please enter all fields!!"
+                    return
                 }
+                axios.post("http://127.0.0.1:5000/api/addlot", this.formdata, { 
+                        headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin" : "*",
+                        "Authorization": `Bearer ${this.token}`
+                    }}
+                ).then(res => {
+                    this.successmsg = res.data.msg
+                    this.showaddlot = false;
+                    this.loaduser();
+                }).catch(error => {
+                    this.errormsg = error.response?.data?.msg
+                })
+            }
+
+        },
+        deletelot: function(lotid){
+            this.successmsg = "";
+            this.errormsg = "";
+            axios.delete(`http://127.0.0.1:5000/api/deletelot/${lotid}`, { headers: {"Authorization": `Bearer ${this.token}`}}
             ).then(res => {
-                this.successmsg = res.data.msg
-                this.showaddlot = false;
+                this.successmsg = res.data.msg;
                 this.loaduser();
             }).catch(error => {
                 this.errormsg = error.response?.data?.msg
             })
+        },
+        editlot: function(lot) {
+            this.successmsg = "";
+            this.errormsg = "";
+            this.editmode = true;
+            this.editlotid = lot.lot_id;
+            this.formdata = {cityname: lot.city, address: lot.address, pincode: lot.pincode, maxspots: lot.spots, priceperhour: lot.price, status: lot.status};
+            this.showaddlot = true;
         }
     }
 }
@@ -90,13 +126,16 @@ export default {
 
 
         <div v-else>
-            <div class="d-flex flex-wrap gap-4 p-3">
-                <div v-for="lot in lots" :key="lot.lot_id" class="p-3 border border-primary rounded shadow-sm" style="width: 250px;">
+            <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
+                <h1 style="text-align: center; padding: 0.2rem;">Parking Lots</h1>
+            </div>
+            <div class="d-flex flex-wrap gap-4 p-3 justify-content-center">
+                <div v-for="lot in lots" :key="lot.lot_id" :class="['p-3', 'border', 'rounded', 'shadow-sm', lot.status == 1 ? 'lot-active' : 'lot-inactive']" style="width: 250px;">
                 <h5 class="text-center">Parking #{{ lot.lot_id }}</h5>
                 <p class="text-center">{{ lot.city }} | {{ lot.pincode }} | {{ lot.price }} Rs.</p>
                 <div class="text-center mb-1">
-                    <a href="#" class="text-warning">Edit</a> |
-                    <a href="#" class="text-danger">Delete</a>
+                    <button class="btn btn-warning" @click="editlot(lot)">Edit</button> |
+                    <button class="btn btn-danger" @click="deletelot(lot.lot_id)">Delete</button>
                 </div>
                 <p class="text-success text-center fw-bold">
                     (Occupied: {{ occupancy(lot) }}/{{ lot.spots }})
@@ -112,12 +151,13 @@ export default {
             <div class="text-center">
                 <button class="btn btn-success" @click="openaddlotform">+ Add Lot</button>
                 <p v-if="successmsg" class="text-success text-center">{{ successmsg }}</p>
+                <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
             </div>
             <div v-if="showaddlot" class="modal-backdrop">
                 <div class="modal-content">
                     <h1 id="text-center">Add new Lot</h1>
                     <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-                    <form @submit.prevent="addlot">
+                    <form @submit.prevent="sendlot">
                         <div class="mb-3">
                             <label for="City" class="form-label">City</label>
                             <input type="text" class="form-control" id="City" placeholder = "example" v-model="formdata.cityname">
@@ -146,8 +186,13 @@ export default {
                             </select>
                         </div>   
                         <div class="text-center">
-                            <button type="submit" class="btn btn-success">Add</button>
-                            <button type="button" class="btn btn-danger" @click="showaddlot = false">Cancel</button>
+                            <div v-if="editmode">
+                                <button type="submit" class="btn btn-success">Edit</button>
+                            </div>
+                            <div v-else>
+                                <button type="submit" class="btn btn-success">Add</button>
+                            </div>
+                            <button type="button" class="btn btn-danger" @click="showaddlot = false; editmode = false">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -167,7 +212,7 @@ export default {
   line-height: 30px;
   text-align: center;
   font-weight: bold;
-  border-radius: 5px;
+  border-radius: 8px;
   border: 1px solid #000;
 }
 .available {
@@ -196,5 +241,12 @@ export default {
   padding: 2rem;
   border-radius: 10px;
   width: 400px;
+}
+.lot-active {
+  background-color: #d4f8d4;
+}
+
+.lot-inactive {
+  background-color: #f8caca;
 }
 </style>
