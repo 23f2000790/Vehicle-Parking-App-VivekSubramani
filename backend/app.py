@@ -4,6 +4,7 @@ from application.database import db
 from application.config import LocalDevelopmentConfig
 from application.models import Users
 from werkzeug.security import generate_password_hash
+from flask_cors import CORS
 
 app = None
 
@@ -13,6 +14,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
+    CORS(app)
     app.app_context().push()
     return app
 
