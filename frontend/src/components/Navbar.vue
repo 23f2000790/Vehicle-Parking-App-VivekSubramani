@@ -16,7 +16,7 @@ export default {
   <nav class="navbar">
     <div class="container-fluid">
       <RouterLink class="navbar-brand" to="/">Vehicle Parking App</RouterLink>
-      <button v-if="loggedIn" @click="logoutUser" class="btn btn-danger">Logout</button>
+      <button @click="logoutUser" class="btn btn-danger">Logout</button>
     </div>
   </nav>
 </template>

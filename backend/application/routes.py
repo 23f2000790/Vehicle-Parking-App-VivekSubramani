@@ -58,7 +58,7 @@ def type_based_access(valid_type):
 @app.route('/api/dashboard')
 @jwt_required()
 def dashboard():
-    if current_user.role == "admin":
+    if current_user.type == "admin":
         lots = Parkinglots.query.all()
         output_list = []
         for i in lots:
@@ -76,7 +76,7 @@ def dashboard():
             }
             output_list.append(output_dict)
         return jsonify({
-            "role" : current_user.role,
+            "role" : current_user.type,
             "username" : current_user.username,
             "data" : output_list
         })
@@ -106,7 +106,7 @@ def dashboard():
             }
             lot_output.append(output_dict)
         return jsonify({
-            "role" : current_user.role,
+            "role" : current_user.type,
             "resdata" : res_output,
             "lotdata" : lot_output
         })
@@ -116,26 +116,27 @@ def dashboard():
 
 
 @app.route('/api/addlot', methods = ['POST'])
-@type_based_access("admin")
 def addlot():
     cityname = request.json.get("cityname")
     address = request.json.get("address")
     pincode = request.json.get("pincode")
     maxspots = request.json.get("maxspots")
     priceperhour = request.json.get("priceperhour")
-    status = request.json.get("status")
-
+    status_1 = request.json.get("status")
+    status = 0
+    if status_1 == "active":
+        status = 1
     newlot = Parkinglots(cityname=cityname, address=address, pincode=pincode, maxspots=maxspots, priceperhour=priceperhour, status=status)
     db.session.add(newlot)
     db.session.commit()
 
 
     for i in range(newlot.maxspots):
-        newspot = Parkingspot(lotid = newlot.id, status = 1)
+        newspot = Parkingspot(lotid = newlot.id, status = 0)
         db.session.add(newspot)
     db.session.commit()
 
-    return "lot added"
+    return jsonify({"msg" : "Lot Added Successfully!!"}), 201
 
 
 @app.route('/api/editlot/<int:lotid>', methods = ['PUT'])

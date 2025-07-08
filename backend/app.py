@@ -15,6 +15,7 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
+    
     app.app_context().push()
     return app
 

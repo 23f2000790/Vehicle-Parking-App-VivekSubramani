@@ -73,10 +73,11 @@ export default{
                         <input type="text" class="form-control" id="qualification"  v-model="formdata.phone_no">
                     </div>    
                     <div class="text-center">
-                        <input type="submit" class="btn btn-primary" value="Register">
+                        <input type="submit" class="btn btn-success" value="Register">
                     </div>
                 </form>
-                <p id="centre-text">Already Registered? <button @click="this.$router.push('/login')">Login</button></p> 
+                <p></p>
+                <p id="centre-text">Already Registered? <RouterLink to="/login"> <button class="btn btn-primary">Login</button></RouterLink></p> 
             </div>
         </div>
     </div>

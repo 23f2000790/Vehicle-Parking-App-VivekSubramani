@@ -20,8 +20,7 @@ export default{
             }, {
                 headers:{
                     "Content-Type" : "application/json",
-                    "Access-Control-Allow-Origin" : "*",
-                    "Authorization" : `Bearer ${localStorage.getItem("token")}`
+                    "Access-Control-Allow-Origin" : "*"
                 }
             }).then(res => {
                 this.token = res.data.access_token
@@ -51,10 +50,11 @@ export default{
                     <input type="password" class="form-control" id="pwd" placeholder = "password" v-model="formdata.password">
                 </div>    
                 <div class="text-center">
-                    <input type="submit" class="btn btn-primary" value="Login">
+                    <input type="submit" class="btn btn-success" value="Login">
                 </div>
             </form>
-            <p id="centre-text">Are you a new User? <button @click="this.$router.push('/register')">Register now.</button></p> 
+            <p></p>
+            <p id="centre-text">Are you a new User? <RouterLink to="/register"> <button class="btn btn-primary">Register</button></RouterLink></p> 
         </div>
     </div>
 
