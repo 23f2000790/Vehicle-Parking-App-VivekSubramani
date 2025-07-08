@@ -32,14 +32,11 @@ export default{
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin" : "*"
             })
-            response.then(res => {
-                if (res.status == 201) {
-                    this.successmsg = res.data.msg
-                    this.$router.push('/login')
-                }
-                else {
-                    this.errormsg = err.response?.data?.msg
-                }
+            .then(res =>{
+                this.successmsg = res.data.msg
+                this.$router.push('/login')
+            }).catch(error => {
+                this.errormsg = error.response.data.msg
             })
         }
     }

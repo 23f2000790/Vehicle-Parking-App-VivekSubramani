@@ -16,7 +16,7 @@ def register():
     phone_no = request.json.get('phone_no')
 
     if not email or not username or not password or not phone_no:
-        return jsonify(message = "Please enter all fields"), 401
+        return jsonify({"msg" : "Please enter all fields"}), 401
 
     users = Users.query.filter((Users.username == username) | (Users.email == email)).first()
     if users:
@@ -76,9 +76,43 @@ def dashboard():
             }
             output_list.append(output_dict)
         return jsonify({
+            "role" : current_user.role,
             "username" : current_user.username,
             "data" : output_list
         })
+    
+    else:
+        reservations = Reservation.query.filter_by(userid = current_user.id).all()
+        lots = Parkinglots.query.all()
+        res_output = []
+        for i in reservations:
+            output_dict = {
+                "spotid" : i.spotid,
+                "parkingts" : i.parkingts,
+                "leavingts" : i.leavingts,
+                "vehiclename" : i.vehiclename,
+                "vehiclenp" : i.vehiclenp,
+                "status" : i.status
+            }
+            res_output.append(output_dict)
+        lot_output = []
+        for j in lots:
+            output_dict = {
+                "id" : j.id,
+                "address" : j.address,
+                "maxspots" : j.maxspots,
+                "price" : j.priceperhour,
+                "pincode" : j.pincode
+            }
+            lot_output.append(output_dict)
+        return jsonify({
+            "role" : current_user.role,
+            "resdata" : res_output,
+            "lotdata" : lot_output
+        })
+
+
+
 
 
 @app.route('/api/addlot', methods = ['POST'])

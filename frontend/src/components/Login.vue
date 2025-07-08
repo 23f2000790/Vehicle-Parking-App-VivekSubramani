@@ -7,7 +7,8 @@ export default{
                 username : "",
                 password : ""
             },
-            token : ""
+            token : "",
+            errormsg: ""
         }
     },
     methods: {
@@ -22,15 +23,12 @@ export default{
                     "Access-Control-Allow-Origin" : "*",
                     "Authorization" : `Bearer ${localStorage.getItem("token")}`
                 }
-            })
-            response.then(res => {
-                if (res.status == 200){
-                    this.token = res.data.access_token
-                    localStorage.setItem("token", res.data.access_token)
-                }
-                else {
-                    console.log(res.response.data.msg)
-                }
+            }).then(res => {
+                this.token = res.data.access_token
+                localStorage.setItem("token", res.data.access_token)
+                this.$router.push('/dashboard')
+            }).catch(error => {
+                this.errormsg = error.response.data.msg
             })
         }
     }
@@ -42,6 +40,7 @@ export default{
     <div id = "canvas">
         <div id = "form-body" style="color: black;">
             <h1 id="centre-text">Login Form</h1>
+            <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
             <form @submit="Loginuser">
                 <div class="mb-3">
                     <label for="Username" class="form-label">Username</label>
@@ -65,3 +64,5 @@ export default{
 <style>
 
 </style>
+
+
