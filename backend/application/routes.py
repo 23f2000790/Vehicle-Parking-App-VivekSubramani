@@ -39,6 +39,8 @@ def login():
         return jsonify({"msg":"Invalid Username"}), 401
     if not check_password_hash(user.password, password):
         return jsonify({"msg":"Incorrect Password"}), 401
+    if user.status == 0:
+        return jsonify({"msg":"Account Unauthorized, Please contact Admin"}), 401
     
     access_token = create_access_token(identity = user)
     return jsonify(access_token = access_token)
@@ -133,6 +135,9 @@ def addlot():
     status = False
     if status_1 == "active":
         status = True
+    existaddress = Parkinglots.query.filter_by(address = address).first()
+    if existaddress:
+        return jsonify({"msg" : "Cannot add 2 lots at same address!!"}), 409
     newlot = Parkinglots(cityname=cityname, address=address, pincode=pincode, maxspots=maxspots, priceperhour=priceperhour, status=status)
     db.session.add(newlot)
     db.session.commit()
@@ -213,6 +218,37 @@ def bookspot():
     db.session.add(reserve)
     db.session.commit()
     return jsonify({"msg" : "Spot booked successfully"}), 201
+
+
+@app.route('/api/users')
+@jwt_required()
+def users():
+    users = Users.query.filter(Users.type == "user").all()
+    role = current_user.type
+    data = []
+    for i in users:
+        user_obj = {
+            "id": i.id,
+            "email": i.email,
+            "username": i.username,
+            "phone_no": i.phone_no,
+            "status": i.status,
+        }
+        data.append(user_obj)
+    return jsonify({"data":data, "role" : role})
+
+
+@app.route('/api/edituser', methods = ['PUT'])
+@jwt_required()
+def edituser():
+    userid = request.json.get("userid")
+    user = Users.query.get(userid)
+    if user.status:
+        user.status = False
+    else:
+        user.status = True
+    db.session.commit()
+    return jsonify({"msg" : "Status Changed Successfully!!"}), 201
     
 
 

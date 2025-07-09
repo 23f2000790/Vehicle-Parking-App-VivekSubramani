@@ -171,49 +171,54 @@ export default {
 <template>
     <div v-if="token">
 
-
-        <div v-if=" role == 'user' ">
-            <h1>Available Parking lots</h1>
-            <table class="table table-bordered table-hover mt-3">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Address</th>
-                        <th>pincode</th>
-                        <th>available spots</th>
-                        <th>price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="lot in availablelotdata" :key="lot.id">
-                    <td>{{ lot.id }}</td>
-                    <td>{{ lot.address }}</td>
-                    <td>{{ lot.pincode }}</td>
-                    <td>{{ lot.maxspots }}</td>
-                    <td>₹{{ lot.price }}</td>
-                    <td><button class="btn btn-primary" @click="bookingform(lot)">Book</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div v-if="openbookingform">
-                <div class="modal-content">
-                    <h1 class="text-center">Book Spot</h1>
-                    <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-                    <form @submit.prevent="bookspot">
-                        <div class="mb-3">
-                            <label for="vehiclename" class="form-label">Vehicle Name</label>
-                            <input type="text" class="form-control" id="vehiclename" placeholder = "vehiclename" v-model="reservedata.vehiclename">
-                        </div>
-                        <div class="mb-3">
-                            <label for="vehiclenp" class="form-label">Vehicle Number Plate</label>
-                            <input type="text" class="form-control" id="vehiclenp" placeholder = "vehiclenp" v-model="reservedata.vehiclenp">
-                        </div>    
-                        <div class="d-flex justify-content-center gap-3">
-                            <button type="submit" class="btn btn-success">Add</button>
-                            <button type="button" class="btn btn-danger" @click="openbookingform = false">Cancel</button>
-                        </div>
-                    </form>
+        <div v-if=" role == 'user' " class="d-flex">
+            <div class="sidebar bg-secondary text-white p-3">
+            <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
+            <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
+            </div>
+            <div class="flex-grow-1 p-3">
+                <h1 class="text-center">Available Parking lots</h1>
+                <table class="table table-bordered table-hover mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Address</th>
+                            <th>pincode</th>
+                            <th>available spots</th>
+                            <th>price</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="lot in availablelotdata" :key="lot.id">
+                        <td>{{ lot.id }}</td>
+                        <td>{{ lot.address }}</td>
+                        <td>{{ lot.pincode }}</td>
+                        <td>{{ lot.maxspots }}</td>
+                        <td>₹{{ lot.price }}</td>
+                        <td><button class="btn btn-primary" @click="bookingform(lot)">Book</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-if="openbookingform">
+                    <div class="modal-content">
+                        <h1 class="text-center">Book Spot</h1>
+                        <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
+                        <form @submit.prevent="bookspot">
+                            <div class="mb-3">
+                                <label for="vehiclename" class="form-label">Vehicle Name</label>
+                                <input type="text" class="form-control" id="vehiclename" placeholder = "vehiclename" v-model="reservedata.vehiclename">
+                            </div>
+                            <div class="mb-3">
+                                <label for="vehiclenp" class="form-label">Vehicle Number Plate</label>
+                                <input type="text" class="form-control" id="vehiclenp" placeholder = "vehiclenp" v-model="reservedata.vehiclenp">
+                            </div>    
+                            <div class="d-flex justify-content-center gap-3">
+                                <button type="submit" class="btn btn-success">Add</button>
+                                <button type="button" class="btn btn-danger" @click="openbookingform = false">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div v-if="reservationdata.length > 0">
@@ -240,7 +245,7 @@ export default {
                             <td>{{ res.leavingts ? res.leavingts : '-' }}</td>
                             <td>
                             <span class="badge bg-secondary" v-if="res.leavingts">Expired</span>
-                            <button class="btn btn-warning btn-sm" v-if="!res.leavingts" @click="vacateSpot(res.spotid, res.parkingts)">
+                            <button class="btn btn-warning" v-if="!res.leavingts" @click="vacateSpot(res.spotid, res.parkingts)">
                                 Vacate
                             </button>
                             </td>
@@ -251,90 +256,97 @@ export default {
         </div>
 
 
-        <div v-else>
-            <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
-                <h1 style="text-align: center; padding: 0.2rem;">Parking Lots</h1>
+        <div v-else class="d-flex">
+            <div class="sidebar bg-dark text-white p-3">
+                <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
+                <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
+                <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
             </div>
-            <div class="d-flex flex-wrap gap-4 p-3 justify-content-center">
-                <div v-for="lot in lots" :key="lot.lot_id" :class="['p-3', 'border', 'rounded', 'shadow-sm', lot.status == 1 ? 'lot-active' : 'lot-inactive']" style="width: 250px;">
-                <div class="d-flex justify-content-center">
-                    <a href="#" style="color: blue;" @click.prevent="viewlot(lot)">Parking {{ lot.lot_id }}</a>
+            <div class="flex-grow-1 p-3">
+                <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
+                    <h1 style="text-align: center; padding: 0.2rem;">Parking Lots</h1>
                 </div>
-                <p class="text-center">{{ lot.city }} | {{ lot.pincode }} | {{ lot.price }}₹</p>
-                <div class="text-center mb-1">
-                    <button class="btn btn-warning" @click="editlot(lot)">Edit</button> |
-                    <button class="btn btn-danger" @click="deletelot(lot.lot_id)">Delete</button>
-                </div>
-                <p class="text-success text-center fw-bold">
-                    (Occupied: {{ occupancy(lot) }}/{{ lot.spots }})
-                </p>
+                <div class="d-flex flex-wrap gap-4 p-3 justify-content-center">
+                    <div v-for="lot in lots" :key="lot.lot_id" :class="['p-3', 'border', 'rounded', 'shadow', lot.status == 1 ? 'lot-active' : 'lot-inactive']" style="width: 250px;">
+                    <div class="d-flex justify-content-center">
+                        <a href="#" style="color: blue;" @click.prevent="viewlot(lot)">Parking {{ lot.lot_id }}</a>
+                    </div>
+                    <p class="text-center">{{ lot.city }} | {{ lot.pincode }} | {{ lot.price }}₹</p>
+                    <div class="text-center mb-1">
+                        <button class="btn btn-warning" @click="editlot(lot)">Edit</button> |
+                        <button class="btn btn-danger" @click="deletelot(lot.lot_id)">Delete</button>
+                    </div>
+                    <p class="text-success text-center fw-bold">
+                        (Occupied: {{ occupancy(lot) }}/{{ lot.spots }})
+                    </p>
 
-                <div class="d-flex flex-wrap justify-content-center gap-2">
-                    <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
-                    {{ spotId }}
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
+                        {{ spotId }}
+                        </div>
+                    </div>
                     </div>
                 </div>
-                </div>
-            </div>
-            <div class="text-center">
-                <button class="btn btn-success" @click="openaddlotform">+ Add Lot</button>
-                <p v-if="successmsg" class="text-success text-center">{{ successmsg }}</p>
-                <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-            </div>
-            <div v-if="showaddlot" class="modal-backdrop">
-                <div class="modal-content">
-                    <h1 class="text-center">Add new Lot</h1>
+                <div class="text-center">
+                    <button class="btn btn-success" @click="openaddlotform">+ Add Lot</button>
+                    <p v-if="successmsg" class="text-success text-center">{{ successmsg }}</p>
                     <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
-                    <form @submit.prevent="sendlot">
-                        <div class="mb-3">
-                            <label for="City" class="form-label">City</label>
-                            <input type="text" class="form-control" id="City" placeholder = "example" v-model="formdata.cityname">
-                        </div>
-                        <div class="mb-3">
-                            <label for="Address" class="form-label">Address</label>
-                            <input type="text" class="form-control" id="Address" placeholder = "Address" v-model="formdata.address">
-                        </div>    
-                        <div class="mb-3">
-                            <label for="Pincode" class="form-label">Pincode</label>
-                            <input type="text" class="form-control" id="Pincode" placeholder = "Pincode" v-model="formdata.pincode">
-                        </div>    
-                        <div class="mb-3">
-                            <label for="maxspots" class="form-label">Max Spots</label>
-                            <input type="text" class="form-control" id="maxspots" placeholder = "maxspots" v-model="formdata.maxspots">
-                        </div>    
-                        <div class="mb-3">
-                            <label for="pph" class="form-label">Price/Hour</label>
-                            <input type="text" class="form-control" id="pph" placeholder = "pph" v-model="formdata.priceperhour">
-                        </div>   
-                        <div class="mb-3">
-                            <label for="Status" class="form-label">Status</label>
-                            <select id="status" class="form-select" v-model="formdata.status">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>   
-                        <div class="d-flex justify-content-center gap-3">
-                            <div v-if="editmode">
-                                <button type="submit" class="btn btn-success">Edit</button>
-                            </div>
-                            <div v-else>
-                                <button type="submit" class="btn btn-success">Add</button>
-                            </div>
-                            <button type="button" class="btn btn-danger" @click="showaddlot = false; editmode = false">Cancel</button>
-                        </div>
-                    </form>
                 </div>
-            </div>
-            <div v-if="viewlotdetail" class="modal-backdrop">
-                <div class="modal-content">
-                    <h5><strong>Lot Id - {{ lotid }}</strong></h5>
-                    <p><strong>City:</strong> {{ formdata.cityname }}</p>
-                    <p><strong>Address:</strong> {{ formdata.address }}</p>
-                    <p><strong>Pincode:</strong> {{ formdata.pincode }}</p>
-                    <p><strong>Max Spots:</strong> {{ formdata.maxspots }}</p>
-                    <p><strong>Price per Hour:</strong> ₹{{ formdata.priceperhour }}</p>
-                    <p><strong>Status:</strong> {{ formdata.status }}</p>
-                    <button class="btn btn-secondary" @click="viewlotdetail = false">Close</button>
+                <div v-if="showaddlot" class="modal-backdrop">
+                    <div class="modal-content">
+                        <h1 class="text-center">Add new Lot</h1>
+                        <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
+                        <form @submit.prevent="sendlot">
+                            <div class="mb-3">
+                                <label for="City" class="form-label">City</label>
+                                <input type="text" class="form-control" id="City" placeholder = "example" v-model="formdata.cityname">
+                            </div>
+                            <div class="mb-3">
+                                <label for="Address" class="form-label">Address</label>
+                                <input type="text" class="form-control" id="Address" placeholder = "Address" v-model="formdata.address">
+                            </div>    
+                            <div class="mb-3">
+                                <label for="Pincode" class="form-label">Pincode</label>
+                                <input type="text" class="form-control" id="Pincode" placeholder = "Pincode" v-model="formdata.pincode">
+                            </div>    
+                            <div class="mb-3">
+                                <label for="maxspots" class="form-label">Max Spots</label>
+                                <input type="text" class="form-control" id="maxspots" placeholder = "maxspots" v-model="formdata.maxspots">
+                            </div>    
+                            <div class="mb-3">
+                                <label for="pph" class="form-label">Price/Hour</label>
+                                <input type="text" class="form-control" id="pph" placeholder = "pph" v-model="formdata.priceperhour">
+                            </div>   
+                            <div class="mb-3">
+                                <label for="Status" class="form-label">Status</label>
+                                <select id="status" class="form-select" v-model="formdata.status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>   
+                            <div class="d-flex justify-content-center gap-3">
+                                <div v-if="editmode">
+                                    <button type="submit" class="btn btn-success">Edit</button>
+                                </div>
+                                <div v-else>
+                                    <button type="submit" class="btn btn-success">Add</button>
+                                </div>
+                                <button type="button" class="btn btn-danger" @click="showaddlot = false; editmode = false">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div v-if="viewlotdetail" class="modal-backdrop">
+                    <div class="modal-content">
+                        <h5><strong>Lot Id - {{ lotid }}</strong></h5>
+                        <p><strong>City:</strong> {{ formdata.cityname }}</p>
+                        <p><strong>Address:</strong> {{ formdata.address }}</p>
+                        <p><strong>Pincode:</strong> {{ formdata.pincode }}</p>
+                        <p><strong>Max Spots:</strong> {{ formdata.maxspots }}</p>
+                        <p><strong>Price per Hour:</strong> ₹{{ formdata.priceperhour }}</p>
+                        <p><strong>Status:</strong> {{ formdata.status }}</p>
+                        <button class="btn btn-secondary" @click="viewlotdetail = false">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -388,5 +400,9 @@ export default {
 
 .lot-inactive {
   background-color: #f8caca;
+}
+.sidebar {
+  min-width: 200px;
+  height: 100vh;
 }
 </style>
