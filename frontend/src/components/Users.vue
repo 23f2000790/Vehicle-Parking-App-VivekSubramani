@@ -8,7 +8,10 @@ export default {
             data: [],
             msg: "",
             showconfirmtab: false,
-            userid: null
+            userid: null,
+            showrestab: false,
+            resdata: {id: "", lotid: "", spotid: ",", parkingts: "", leavingts: "", price: "", vehiclename: "", vehiclenp: "", status: ""},
+            username: "",
         }
     },
     mounted() {
@@ -51,6 +54,11 @@ export default {
         askagain: function(user) {
             this.showconfirmtab = true;
             this.userid = user.id;
+        },
+        userres: function(user) {
+            this.username = user.username;
+            this.resdata = user.reservations;
+            this.showrestab = true;
         }
     }
 }
@@ -90,7 +98,7 @@ export default {
                                 <button :class="user.status ? 'Active rounded-3' : 'Unauthorized rounded-3'" @click="askagain(user)">
                                     {{ user.status ? "Active" : "Unauthorized" }}
                                 </button> &ensp;
-                                <button v-if="user.status == true" class="btn btn-primary" @click="userhistory(user)">History</button>
+                                <button v-if="user.status == true && user.reservations.length > 0" class="btn btn-primary" @click="userres(user)">Reservations</button>
                             </td>
                         </tr>
                     </tbody>
@@ -98,13 +106,55 @@ export default {
             </div>
         </div>
         <div v-if="showconfirmtab" class="modal-backdrop">
-            <div class="modal-content">
-                <h5><strong>Are you sure that you want to remove this user?</strong></h5><p></p>
+            <div class="modal-content-view">
+                <h5><strong>Are you sure that you want to change this user's status?</strong></h5><p></p>
                 <div class="d-flex justify-content-center">
                     <button class="btn btn-danger" @click="changestatus(); showconfirmtab = false">Confirm</button> &ensp;&ensp;
                     <button class="btn btn-secondary" @click="loaddata(); showconfirmtab = false">Close</button>
                 </div>
             </div>
+        </div>
+        <div v-if="showrestab" class="modal-backdrop">
+            <div class="d-flex justify-content-center">
+                <div class="modal-content">
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-hover align-middle" style="width: auto;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>LotID</th>
+                                    <th>SlotID</th>
+                                    <th>Parked</th>
+                                    <th>Vacated</th>
+                                    <th>Price</th>
+                                    <th>Vehicle</th>
+                                    <th>Number</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="res in resdata" :key="res.id">
+                                    <td>{{ res.lotid }}</td>
+                                    <td>{{ res.spotid }}</td>
+                                    <td>{{ res.parkingts }}</td>
+                                    <td>{{ res.leavingts || '-' }}</td>
+                                    <td>{{ res.price || '-' }}</td>
+                                    <td>{{ res.vehiclename }}</td>
+                                    <td>{{ res.vehiclenp }}</td>
+                                    <td class="text-center align-middle">
+                                        <span :class="res.status ? 'badge bg-success' : 'badge bg-secondary'" style="font-size: 0.9rem; padding: 6px 12px;">
+                                            {{ res.status ? 'Active' : 'Expired' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <button class="btn btn-secondary" @click="showrestab = false">Close</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </template>
@@ -141,6 +191,13 @@ td, th {
 }
 
 .modal-content {
+  display: inline-block;
+  max-width: 95vw;
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.modal-content-view {
   background: white;
   padding: 2rem;
   border-radius: 10px;

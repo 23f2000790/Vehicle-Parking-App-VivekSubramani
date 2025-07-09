@@ -162,7 +162,24 @@ export default {
                 this.reservedata.vehiclename = "";
                 this.reservedata.vehiclenp = "";
                 this.successmsg = res.data.msg;
+            }).catch(error => {
+                this.openbookingform = false;
+                this.reservedata.vehiclename = "";
+                this.reservedata.vehiclenp = "";
+                this.errormsg = error.response?.data?.msg;               
             })
+        },
+        vacatespot: function(spotid, pts, id) {
+            this.successmsg = "";
+            axios.put("http://127.0.0.1:5000/api/vacatespot", {spotid:spotid, pts:pts, id:id}, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin" : "*",
+                    "Authorization": `Bearer ${this.token}`   
+                }}).then(res => {
+                    this.successmsg = res.data.msg;
+                    this.loaduser();
+                })
         }
     }
 }
@@ -173,6 +190,7 @@ export default {
 
         <div v-if=" role == 'user' " class="d-flex">
             <div class="sidebar bg-secondary text-white p-3">
+            <p><strong>Welcome, {{ this.username }}</strong></p>
             <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
             <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
             </div>
@@ -200,7 +218,11 @@ export default {
                         </tr>
                     </tbody>
                 </table>
-                <div v-if="openbookingform">
+                <div class="text-center">
+                    <p v-if="successmsg" class="text-success text-center">{{ successmsg }}</p>
+                    <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
+                </div>
+                <div v-if="openbookingform" class="modal-backdrop">
                     <div class="modal-content">
                         <h1 class="text-center">Book Spot</h1>
                         <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
@@ -220,44 +242,48 @@ export default {
                         </form>
                     </div>
                 </div>
+                <div v-if="reservationdata.length > 0" class="flex-grow-1 p-3">
+                    <h1 class="text-center">Booking Data</h1>
+                    <table class="table table-bordered table-hover mt-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Spot ID</th>
+                                <th>Address</th>
+                                <th>Vehicle Name</th>
+                                <th>Number Plate</th>
+                                <th>Booking Time</th>
+                                <th>Leaving Time</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="res in reservationdata" :key="res.id">
+                                <td>{{ res.spotid }}</td>
+                                <td>{{ res.address }}</td>
+                                <td>{{ res.vehiclename }}</td>
+                                <td>{{ res.vehiclenp }}</td>
+                                <td>{{ res.parkingts }}</td>
+                                <td>{{ res.leavingts ? res.leavingts : '-' }}</td>
+                                <td>{{ res.price || '-' }}</td>
+                                <td>
+                                <span class="badge bg-secondary" v-if="res.leavingts">Expired</span>
+                                <button class="btn btn-warning" v-if="!res.leavingts" @click="vacatespot(res.spotid, res.parkingts, res.id)">
+                                    Vacate
+                                </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div v-if="reservationdata.length > 0">
-                <h1>Booking Data</h1>
-                <table class="table table-bordered table-hover mt-3">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Spot ID</th>
-                            <th>Address</th>
-                            <th>Vehicle Name</th>
-                            <th>Number Plate</th>
-                            <th>Booking Time</th>
-                            <th>Leaving Time</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="res in reservationdata" :key="res.spotid + res.parkingts">
-                            <td>{{ res.spotid }}</td>
-                            <td>{{ res.address }}</td>
-                            <td>{{ res.vehiclename }}</td>
-                            <td>{{ res.vehiclenp }}</td>
-                            <td>{{ res.parkingts }}</td>
-                            <td>{{ res.leavingts ? res.leavingts : '-' }}</td>
-                            <td>
-                            <span class="badge bg-secondary" v-if="res.leavingts">Expired</span>
-                            <button class="btn btn-warning" v-if="!res.leavingts" @click="vacateSpot(res.spotid, res.parkingts)">
-                                Vacate
-                            </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+
         </div>
 
 
         <div v-else class="d-flex">
             <div class="sidebar bg-dark text-white p-3">
+                <p><strong>Welcome, {{ this.username }}</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>

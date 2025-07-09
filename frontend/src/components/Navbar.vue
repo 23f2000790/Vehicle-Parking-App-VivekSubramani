@@ -1,10 +1,11 @@
 <script>
 export default {
-  props: ['loggedIn'],
+  props: ['loggedin'],
   methods: {
     logoutUser() {
       this.token = null;
       localStorage.clear();
+      this.$emit('logout');
       this.$router.push('/');
     }
   }
@@ -16,7 +17,7 @@ export default {
   <nav class="navbar">
     <div class="container-fluid">
       <RouterLink class="navbar-brand" to="/">Vehicle Parking App</RouterLink>
-      <button @click="logoutUser" class="btn btn-danger">Logout</button>
+      <button v-if="loggedin" @click="logoutUser" class="btn btn-danger">Logout</button>
     </div>
   </nav>
 </template>

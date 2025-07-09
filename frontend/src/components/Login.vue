@@ -25,6 +25,7 @@ export default{
             }).then(res => {
                 this.token = res.data.access_token
                 localStorage.setItem("token", res.data.access_token)
+                this.$emit('successful-login')
                 this.$router.push('/dashboard')
             }).catch(error => {
                 this.errormsg = error.response.data.msg

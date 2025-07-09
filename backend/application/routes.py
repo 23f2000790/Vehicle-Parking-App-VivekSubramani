@@ -91,10 +91,12 @@ def dashboard():
         res_output = []
         for i in reservations:
             output_dict = {
+                "id" : i.id,
                 "spotid" : i.spotid,
                 "address" : i.parkingspot.parkinglots.address,
                 "parkingts" : i.parkingts.strftime("%Y-%m-%d %H:%M:%S"),
                 "leavingts" : i.leavingts.strftime("%Y-%m-%d %H:%M:%S") if i.leavingts else "",
+                "price" : i.price,
                 "vehiclename" : i.vehiclename,
                 "vehiclenp" : i.vehiclenp,
                 "status" : i.status
@@ -200,21 +202,26 @@ def deletelot(lotid):
     return jsonify({"msg" : "Lot deleted successfully!!"}), 201
 
 
-@app.route('/api/bookspot', methods = ['POST'])
+@app.route('/api/bookspot', methods = ['POST','PUT'])
 @jwt_required()
 def bookspot():
     parkingts = datetime.now()
     lotid = request.json.get("lotid")
-    spot = Parkingspot.query.filter_by(lotid = lotid).first()
+    vehiclenp = request.json.get("vehiclenp")
+    rescheck = Reservation.query.filter_by(vehiclenp = vehiclenp, status = 1).first()
+    if rescheck:
+        return jsonify({"msg" : "Vehicle with this number place is already parked in some other spot!!"}), 409
+    spot = Parkingspot.query.filter_by(lotid = lotid, status = 0).first()
     reserve = Reservation(
         spotid = spot.id,
         userid = current_user.id,
         parkingts = parkingts,
         vehiclename = request.json.get("vehiclename"),
-        vehiclenp = request.json.get("vehiclenp"),
+        vehiclenp = vehiclenp,
         status = 1
     )
-    spot.status = 1
+    spot2 = Parkingspot.query.get(spot.id)
+    spot2.status = 1
     db.session.add(reserve)
     db.session.commit()
     return jsonify({"msg" : "Spot booked successfully"}), 201
@@ -227,12 +234,29 @@ def users():
     role = current_user.type
     data = []
     for i in users:
+        resdata = []
+        reservations = Reservation.query.filter_by(userid = i.id).all()
+        for j in reservations:
+            res_obj = {
+                "id": j.id,
+                "lotid": j.parkingspot.lotid,
+                "spotid": j.spotid,
+                "userid": j.userid,
+                "parkingts": j.parkingts,
+                "leavingts": j.leavingts,
+                "price": j.price,
+                "vehiclename": j.vehiclename,
+                "vehiclenp": j.vehiclenp,
+                "status": j.status
+            }
+            resdata.append(res_obj)
         user_obj = {
             "id": i.id,
             "email": i.email,
             "username": i.username,
             "phone_no": i.phone_no,
             "status": i.status,
+            "reservations" : resdata
         }
         data.append(user_obj)
     return jsonify({"data":data, "role" : role})
@@ -250,6 +274,31 @@ def edituser():
     db.session.commit()
     return jsonify({"msg" : "Status Changed Successfully!!"}), 201
     
+
+@app.route('/api/vacatespot', methods=['PUT'])
+@jwt_required()
+def vacatespot():
+    lts = datetime.now()
+    spotid = request.json.get("spotid")
+    id = request.json.get("id")
+    spot = Parkingspot.query.get(spotid)
+    price = spot.parkinglots.priceperhour
+    pts_str = request.json.get("pts")
+    pts = datetime.strptime(pts_str, "%Y-%m-%d %H:%M:%S")
+    timediff = lts - pts
+    timediffsec = timediff.total_seconds()
+    priceforsec = price/3600
+    totalprice = round(timediffsec*priceforsec,2)
+
+    res = Reservation.query.get(id)
+    res.price = totalprice
+    res.leavingts = lts
+    res.status = 0
+    spot.status = 0
+    db.session.commit()
+    return jsonify({"msg":"Spot Vacated Successfully"}),201
+    
+
 
 
 
