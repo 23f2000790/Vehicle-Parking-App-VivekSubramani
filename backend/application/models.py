@@ -31,7 +31,7 @@ class Reservation(db.Model):
     spotid = db.Column(db.Integer, db.ForeignKey('parkingspot.id'), nullable = False)
     userid = db.Column(db.Integer, db.ForeignKey('users.id'), nullable = False)
     parkingts = db.Column(db.DateTime, nullable = False)
-    leavingts = db.Column(db.DateTime, nullable = False)
+    leavingts = db.Column(db.DateTime)
     vehiclename = db.Column(db.String(), nullable = False)
     vehiclenp = db.Column(db.String(), nullable = False)
     status = db.Column(db.Boolean, nullable = False)

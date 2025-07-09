@@ -4,14 +4,22 @@ export default {
     data(){
         return {
             token: "",
+            username: "",
             role: "",
             lots: [],
             formdata: {cityname: "", address: "", pincode: "", maxspots: "", priceperhour: "", status: ""},
+            reservedata: {vehiclename: "", vehiclenp: ""},
             errormsg: "",
             successmsg: "",
             showaddlot: false,
             editmode: false,
-            editlotid: null
+            editlotid: null,
+            viewlotdetail: false,
+            lotid: null,
+            reservationdata: [],
+            availablelotdata: [],
+            selectedlot: null,
+            openbookingform: false
         }
     },
     mounted(){
@@ -34,7 +42,15 @@ export default {
                 }
             }).then(res => {
                 this.role = res.data.role;
-                this.lots = res.data.data;
+                this.username = res.data.username;
+                if (res.data.role =="admin"){
+                    this.lots = res.data.data;
+                } else {
+                    this.reservationdata = res.data.resdata;
+                    this.availablelotdata = res.data.lotdata;
+                }
+                
+               
             })
         },
         occupancy: function(lot) {
@@ -111,6 +127,42 @@ export default {
             this.editlotid = lot.lot_id;
             this.formdata = {cityname: lot.city, address: lot.address, pincode: lot.pincode, maxspots: lot.spots, priceperhour: lot.price, status: lot.status};
             this.showaddlot = true;
+        },
+        viewlot: function(lot) {
+            this.lotid = lot.lot_id;
+            this.formdata = {cityname: lot.city, address: lot.address, pincode: lot.pincode, maxspots: lot.spots, priceperhour: lot.price, status: lot.status ? "active" : "inactive"};
+            this.viewlotdetail = true;
+        },
+        bookingform: function (lot) {
+            this.selectedlot = lot.id;
+            this.openbookingform = true;
+            this.errormsg = "";
+            this.successmsg = "";
+        },
+        bookspot: function() {
+            this.successmsg = "";
+            this.errormsg = "";
+            if (!this.reservedata.vehiclename || !this.reservedata.vehiclenp) {
+                this.errormsg = "Please fill all the fields!!";
+                return;
+            }
+            axios.post("http://127.0.0.1:5000/api/bookspot", {
+                lotid: this.selectedlot,
+                vehiclename: this.reservedata.vehiclename,
+                vehiclenp: this.reservedata.vehiclenp
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin" : "*",
+                    "Authorization": `Bearer ${this.token}`   
+                }
+            }).then(res => {
+                this.loaduser();
+                this.openbookingform = false;
+                this.reservedata.vehiclename = "";
+                this.reservedata.vehiclenp = "";
+                this.successmsg = res.data.msg;
+            })
         }
     }
 }
@@ -121,7 +173,81 @@ export default {
 
 
         <div v-if=" role == 'user' ">
-            user
+            <h1>Available Parking lots</h1>
+            <table class="table table-bordered table-hover mt-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Address</th>
+                        <th>pincode</th>
+                        <th>available spots</th>
+                        <th>price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="lot in availablelotdata" :key="lot.id">
+                    <td>{{ lot.id }}</td>
+                    <td>{{ lot.address }}</td>
+                    <td>{{ lot.pincode }}</td>
+                    <td>{{ lot.maxspots }}</td>
+                    <td>₹{{ lot.price }}</td>
+                    <td><button class="btn btn-primary" @click="bookingform(lot)">Book</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div v-if="openbookingform">
+                <div class="modal-content">
+                    <h1 class="text-center">Book Spot</h1>
+                    <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
+                    <form @submit.prevent="bookspot">
+                        <div class="mb-3">
+                            <label for="vehiclename" class="form-label">Vehicle Name</label>
+                            <input type="text" class="form-control" id="vehiclename" placeholder = "vehiclename" v-model="reservedata.vehiclename">
+                        </div>
+                        <div class="mb-3">
+                            <label for="vehiclenp" class="form-label">Vehicle Number Plate</label>
+                            <input type="text" class="form-control" id="vehiclenp" placeholder = "vehiclenp" v-model="reservedata.vehiclenp">
+                        </div>    
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" class="btn btn-success">Add</button>
+                            <button type="button" class="btn btn-danger" @click="openbookingform = false">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div v-if="reservationdata.length > 0">
+                <h1>Booking Data</h1>
+                <table class="table table-bordered table-hover mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Spot ID</th>
+                            <th>Address</th>
+                            <th>Vehicle Name</th>
+                            <th>Number Plate</th>
+                            <th>Booking Time</th>
+                            <th>Leaving Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="res in reservationdata" :key="res.spotid + res.parkingts">
+                            <td>{{ res.spotid }}</td>
+                            <td>{{ res.address }}</td>
+                            <td>{{ res.vehiclename }}</td>
+                            <td>{{ res.vehiclenp }}</td>
+                            <td>{{ res.parkingts }}</td>
+                            <td>{{ res.leavingts ? res.leavingts : '-' }}</td>
+                            <td>
+                            <span class="badge bg-secondary" v-if="res.leavingts">Expired</span>
+                            <button class="btn btn-warning btn-sm" v-if="!res.leavingts" @click="vacateSpot(res.spotid, res.parkingts)">
+                                Vacate
+                            </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
 
@@ -131,8 +257,10 @@ export default {
             </div>
             <div class="d-flex flex-wrap gap-4 p-3 justify-content-center">
                 <div v-for="lot in lots" :key="lot.lot_id" :class="['p-3', 'border', 'rounded', 'shadow-sm', lot.status == 1 ? 'lot-active' : 'lot-inactive']" style="width: 250px;">
-                <h5 class="text-center">Parking #{{ lot.lot_id }}</h5>
-                <p class="text-center">{{ lot.city }} | {{ lot.pincode }} | {{ lot.price }} Rs.</p>
+                <div class="d-flex justify-content-center">
+                    <a href="#" style="color: blue;" @click.prevent="viewlot(lot)">Parking {{ lot.lot_id }}</a>
+                </div>
+                <p class="text-center">{{ lot.city }} | {{ lot.pincode }} | {{ lot.price }}₹</p>
                 <div class="text-center mb-1">
                     <button class="btn btn-warning" @click="editlot(lot)">Edit</button> |
                     <button class="btn btn-danger" @click="deletelot(lot.lot_id)">Delete</button>
@@ -143,7 +271,7 @@ export default {
 
                 <div class="d-flex flex-wrap justify-content-center gap-2">
                     <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
-                    {{ status ? 'O' : 'A' }}
+                    {{ spotId }}
                     </div>
                 </div>
                 </div>
@@ -155,7 +283,7 @@ export default {
             </div>
             <div v-if="showaddlot" class="modal-backdrop">
                 <div class="modal-content">
-                    <h1 id="text-center">Add new Lot</h1>
+                    <h1 class="text-center">Add new Lot</h1>
                     <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
                     <form @submit.prevent="sendlot">
                         <div class="mb-3">
@@ -185,7 +313,7 @@ export default {
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>   
-                        <div class="text-center">
+                        <div class="d-flex justify-content-center gap-3">
                             <div v-if="editmode">
                                 <button type="submit" class="btn btn-success">Edit</button>
                             </div>
@@ -195,6 +323,18 @@ export default {
                             <button type="button" class="btn btn-danger" @click="showaddlot = false; editmode = false">Cancel</button>
                         </div>
                     </form>
+                </div>
+            </div>
+            <div v-if="viewlotdetail" class="modal-backdrop">
+                <div class="modal-content">
+                    <h5><strong>Lot Id - {{ lotid }}</strong></h5>
+                    <p><strong>City:</strong> {{ formdata.cityname }}</p>
+                    <p><strong>Address:</strong> {{ formdata.address }}</p>
+                    <p><strong>Pincode:</strong> {{ formdata.pincode }}</p>
+                    <p><strong>Max Spots:</strong> {{ formdata.maxspots }}</p>
+                    <p><strong>Price per Hour:</strong> ₹{{ formdata.priceperhour }}</p>
+                    <p><strong>Status:</strong> {{ formdata.status }}</p>
+                    <button class="btn btn-secondary" @click="viewlotdetail = false">Close</button>
                 </div>
             </div>
         </div>

@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token, jwt_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from .models import *
 from .database import db
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from functools import wraps
 
 
@@ -90,8 +90,9 @@ def dashboard():
         for i in reservations:
             output_dict = {
                 "spotid" : i.spotid,
-                "parkingts" : i.parkingts,
-                "leavingts" : i.leavingts,
+                "address" : i.parkingspot.parkinglots.address,
+                "parkingts" : i.parkingts.strftime("%Y-%m-%d %H:%M:%S"),
+                "leavingts" : i.leavingts.strftime("%Y-%m-%d %H:%M:%S") if i.leavingts else "",
                 "vehiclename" : i.vehiclename,
                 "vehiclenp" : i.vehiclenp,
                 "status" : i.status
@@ -99,16 +100,20 @@ def dashboard():
             res_output.append(output_dict)
         lot_output = []
         for j in lots:
-            output_dict = {
-                "id" : j.id,
-                "address" : j.address,
-                "maxspots" : j.maxspots,
-                "price" : j.priceperhour,
-                "pincode" : j.pincode
-            }
-            lot_output.append(output_dict)
+            if j.status == 1:
+                spotcount = Parkingspot.query.filter(Parkingspot.lotid == j.id, Parkingspot.status == 0).count()
+                if spotcount > 0:
+                    output_dict = {
+                        "id" : j.id,
+                        "address" : j.address,
+                        "maxspots" : spotcount,
+                        "price" : j.priceperhour,
+                        "pincode" : j.pincode
+                    }
+                    lot_output.append(output_dict)
         return jsonify({
             "role" : current_user.type,
+            "username" : current_user.username,
             "resdata" : res_output,
             "lotdata" : lot_output
         })
@@ -188,6 +193,27 @@ def deletelot(lotid):
     db.session.delete(lot)
     db.session.commit()
     return jsonify({"msg" : "Lot deleted successfully!!"}), 201
+
+
+@app.route('/api/bookspot', methods = ['POST'])
+@jwt_required()
+def bookspot():
+    parkingts = datetime.now()
+    lotid = request.json.get("lotid")
+    spot = Parkingspot.query.filter_by(lotid = lotid).first()
+    reserve = Reservation(
+        spotid = spot.id,
+        userid = current_user.id,
+        parkingts = parkingts,
+        vehiclename = request.json.get("vehiclename"),
+        vehiclenp = request.json.get("vehiclenp"),
+        status = 1
+    )
+    spot.status = 1
+    db.session.add(reserve)
+    db.session.commit()
+    return jsonify({"msg" : "Spot booked successfully"}), 201
+    
 
 
 
