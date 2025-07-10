@@ -5,6 +5,7 @@ from .models import *
 from .database import db
 from datetime import datetime, timezone
 from functools import wraps
+from sqlalchemy import or_
 
 
 
@@ -15,12 +16,12 @@ def register():
     password = request.json.get('password')
     phone_no = request.json.get('phone_no')
 
-    if not email or not username or not password or not phone_no:
-        return jsonify({"msg" : "Please enter all fields"}), 401
-
     users = Users.query.filter((Users.username == username) | (Users.email == email)).first()
     if users:
         return jsonify({"msg":"User already exists!"}), 409
+    phone_check = Users.query.filter_by(phone_no=phone_no).first()
+    if phone_check:
+        return jsonify({"msg":"This phone number already exists!"}), 409
     hashpass = generate_password_hash(password)
     newuser = Users(email=email, username=username, password=hashpass, phone_no=phone_no, status=True)
     db.session.add(newuser)
@@ -36,7 +37,7 @@ def login():
 
     user = Users.query.filter_by(username = username).first()
     if not user:
-        return jsonify({"msg":"Invalid Username"}), 401
+        return jsonify({"msg":"User does not exist, please register"}), 401
     if not check_password_hash(user.password, password):
         return jsonify({"msg":"Incorrect Password"}), 401
     if user.status == 0:
@@ -93,7 +94,7 @@ def dashboard():
             output_dict = {
                 "id" : i.id,
                 "spotid" : i.spotid,
-                "address" : i.parkingspot.parkinglots.address,
+                "address" : i.address,
                 "parkingts" : i.parkingts.strftime("%Y-%m-%d %H:%M:%S"),
                 "leavingts" : i.leavingts.strftime("%Y-%m-%d %H:%M:%S") if i.leavingts else "",
                 "price" : i.price,
@@ -213,9 +214,12 @@ def bookspot():
         return jsonify({"msg" : "Vehicle with this number place is already parked in some other spot!!"}), 409
     spot = Parkingspot.query.filter_by(lotid = lotid, status = 0).first()
     reserve = Reservation(
+        lotid = lotid,
         spotid = spot.id,
+        address = spot.parkinglots.address,
         userid = current_user.id,
         parkingts = parkingts,
+        priceperhour = spot.parkinglots.priceperhour,
         vehiclename = request.json.get("vehiclename"),
         vehiclenp = vehiclenp,
         status = 1
@@ -239,12 +243,13 @@ def users():
         for j in reservations:
             res_obj = {
                 "id": j.id,
-                "lotid": j.parkingspot.lotid,
+                "lotid": j.lotid,
                 "spotid": j.spotid,
                 "userid": j.userid,
                 "parkingts": j.parkingts,
                 "leavingts": j.leavingts,
                 "price": j.price,
+                "priceperhour": j.priceperhour,
                 "vehiclename": j.vehiclename,
                 "vehiclenp": j.vehiclenp,
                 "status": j.status
@@ -297,6 +302,58 @@ def vacatespot():
     spot.status = 0
     db.session.commit()
     return jsonify({"msg":"Spot Vacated Successfully"}),201
+
+
+@app.route('/api/search')
+@jwt_required()
+def search():
+    searchword = request.args.get("searchword")
+    query = "%" + searchword + "%"
+    result = Parkinglots.query.filter(or_(Parkinglots.address.like(query), Parkinglots.pincode.like(query))).all()
+    lot_output = []
+    if len(result) == 0:
+        return jsonify({"msg" : "No results found"}), 404
+    for j in result:
+        if j.status == 1:
+            spotcount = Parkingspot.query.filter(Parkingspot.lotid == j.id, Parkingspot.status == 0).count()
+            if spotcount > 0:
+                output_dict = {
+                    "id" : j.id,
+                    "address" : j.address,
+                    "maxspots" : spotcount,
+                    "price" : j.priceperhour,
+                    "pincode" : j.pincode
+                }
+                lot_output.append(output_dict)
+    return jsonify({"searchres" : lot_output}), 201
+
+
+@app.route('/api/bill')
+@jwt_required()
+def bill():
+    resid = request.args.get("id")
+    res = Reservation.query.get(resid)
+    pts = res.parkingts
+    lts = res.leavingts
+    timetaken = lts - pts
+    insec = timetaken.total_seconds()
+    hour = int(insec//3600)
+    minute = int((insec%3600)//60)
+    seconds = int(insec%60)
+    final_time = str(hour) + "hr, " + str(minute) + "min, " + str(seconds) + "sec"
+    res_obj = {
+        "resid": resid,
+        "address": res.address,
+        "priceperhour": res.priceperhour,
+        "vehiclename": res.vehiclename,
+        "vehiclenp": res.vehiclenp,
+        "parkingts": pts,
+        "leavingts": lts,
+        "timetaken": final_time,
+        "price" : res.price,
+    }
+    return jsonify({"billdata" : res_obj}), 201
+
     
 
 

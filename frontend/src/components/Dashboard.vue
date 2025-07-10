@@ -19,7 +19,10 @@ export default {
             reservationdata: [],
             availablelotdata: [],
             selectedlot: null,
-            openbookingform: false
+            openbookingform: false,
+            searchword: "",
+            billdata: {},
+            showbillview: false
         }
     },
     mounted(){
@@ -34,6 +37,8 @@ export default {
             }
         },
         loaduser: function(){
+            this.errormsg = "";
+            this.successmsg = "";
             axios.get("http://127.0.0.1:5000/api/dashboard", {
                 headers:{
                     "Content-Type" : "application/json",
@@ -180,6 +185,36 @@ export default {
                     this.successmsg = res.data.msg;
                     this.loaduser();
                 })
+        },
+        search: function() {
+            this.availablelotdata = [];
+            this.errormsg = "";
+            this.successmsg = "";
+            axios.get("http://127.0.0.1:5000/api/search", {
+                params: {searchword: this.searchword},
+                headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin" : "*",
+                "Authorization": `Bearer ${this.token}`   
+                }}
+                ).then(res => {
+                    this.availablelotdata = res.data.searchres;
+                }).catch(error => {
+                    this.errormsg = error.response?.data?.msg;
+                })
+        },
+        showbill: function(res) {
+            axios.get("http://127.0.0.1:5000/api/bill", {
+                params: {id: res.id},
+                headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin" : "*",
+                "Authorization": `Bearer ${this.token}`   
+                }}
+            ).then(res => {
+                this.billdata = res.data.billdata;
+                this.showbillview = true;
+            })
         }
     }
 }
@@ -191,11 +226,21 @@ export default {
         <div v-if=" role == 'user' " class="d-flex">
             <div class="sidebar bg-secondary text-white p-3">
             <p><strong>Welcome, {{ this.username }}</strong></p>
-            <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
+            <RouterLink class="d-block mb-2 text-white" @click="loaduser()" to="/dashboard">Home</RouterLink>
             <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
             </div>
             <div class="flex-grow-1 p-3">
-                <h1 class="text-center">Available Parking lots</h1>
+                <div style="background-color: #e0f0ff; margin: 10px; padding: 20px; border-radius: 8px;">
+                    <h1 style="text-align: center; padding: 0.2rem;">Available parking lots</h1>
+                    <form @submit.prevent="search">
+                        <div class="d-flex justify-content-center">
+                            <div class="input-group" style="width: 50%;">
+                                <input type="search" class="form-control form-control-lg" id="search" placeholder = "Type here..." v-model="searchword" style="border-radius: 8px 0 0 8px;">
+                                <button type="submit" class="btn btn-primary" style="border-radius: 0 8px 8px 0;">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <table class="table table-bordered table-hover mt-3">
                     <thead class="table-light">
                         <tr>
@@ -243,7 +288,9 @@ export default {
                     </div>
                 </div>
                 <div v-if="reservationdata.length > 0" class="flex-grow-1 p-3">
-                    <h1 class="text-center">Booking Data</h1>
+                    <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
+                        <h1 style="text-align: center; padding: 0.2rem;">Booking Data</h1>
+                    </div>
                     <table class="table table-bordered table-hover mt-3">
                         <thead class="table-light">
                             <tr>
@@ -267,14 +314,34 @@ export default {
                                 <td>{{ res.leavingts ? res.leavingts : '-' }}</td>
                                 <td>{{ res.price || '-' }}</td>
                                 <td>
-                                <span class="badge bg-secondary" v-if="res.leavingts">Expired</span>
-                                <button class="btn btn-warning" v-if="!res.leavingts" @click="vacatespot(res.spotid, res.parkingts, res.id)">
+                                <div v-if="res.leavingts" class="d-flex justify-content-center gap-2">
+                                    <button class="btn btn-warning" @click="showbill(res)">
+                                        Bill
+                                    </button>
+                                </div>
+                                <div class="text-center">
+                                 <button class="btn btn-warning" v-if="!res.leavingts" @click="vacatespot(res.spotid, res.parkingts, res.id)">
                                     Vacate
-                                </button>
+                                 </button>                                   
+                                </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div v-if="showbillview" class="modal-backdrop">
+                    <div class="modal-content">
+                        <h5><strong>Reservation - #{{ billdata.resid }}</strong></h5>
+                        <p><strong>Vehicle: </strong> {{ billdata.vehiclename }}</p>
+                        <p><strong>Number Plate: </strong> {{ billdata.vehiclenp }}</p>
+                        <p><strong>Address:</strong> {{ billdata.address }}</p>
+                        <p><strong>Parked: </strong> {{ billdata.parkingts }}</p>
+                        <p><strong>Vacated: </strong> {{ billdata.leavingts }}</p>
+                        <p><strong>Price per Hour:</strong> ₹{{ billdata.priceperhour }}</p>
+                        <p><strong>Parking duration:</strong> {{ billdata.timetaken }}</p>
+                        <p><strong>Price:</strong> ₹{{ billdata.price }}</p>
+                        <button class="btn btn-secondary" @click="showbillview = false">Close</button>
+                    </div>
                 </div>
             </div>
 

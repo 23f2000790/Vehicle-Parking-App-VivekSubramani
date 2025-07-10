@@ -12,6 +12,8 @@ export default {
             showrestab: false,
             resdata: {id: "", lotid: "", spotid: ",", parkingts: "", leavingts: "", price: "", vehiclename: "", vehiclenp: "", status: ""},
             username: "",
+            billdata: {},
+            showbillview: false
         }
     },
     mounted() {
@@ -59,6 +61,19 @@ export default {
             this.username = user.username;
             this.resdata = user.reservations;
             this.showrestab = true;
+        },
+        showbilladmin: function(res) {
+            axios.get("http://127.0.0.1:5000/api/bill", {
+                params: {id: res.id},
+                headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin" : "*",
+                "Authorization": `Bearer ${this.token}`   
+                }}
+            ).then(res => {
+                this.billdata = res.data.billdata;
+                this.showbillview = true;
+            })
         }
     }
 }
@@ -141,9 +156,14 @@ export default {
                                     <td>{{ res.vehiclename }}</td>
                                     <td>{{ res.vehiclenp }}</td>
                                     <td class="text-center align-middle">
-                                        <span :class="res.status ? 'badge bg-success' : 'badge bg-secondary'" style="font-size: 0.9rem; padding: 6px 12px;">
-                                            {{ res.status ? 'Active' : 'Expired' }}
-                                        </span>
+                                        <div v-if="res.status">
+                                            <button class="btn btn-success">Active</button>
+                                        </div>
+                                        <div v-else>
+                                            <button class="btn btn-warning" @click="showbilladmin(res)">
+                                                Expired
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -154,7 +174,20 @@ export default {
                     </div>
                 </div>
             </div>
-
+        </div>
+        <div v-if="showbillview" class="modal-backdrop">
+            <div class="modal-content-view">
+                <h5><strong>Reservation - #{{ billdata.resid }}</strong></h5>
+                <p><strong>Vehicle: </strong> {{ billdata.vehiclename }}</p>
+                <p><strong>Number Plate: </strong> {{ billdata.vehiclenp }}</p>
+                <p><strong>Address:</strong> {{ billdata.address }}</p>
+                <p><strong>Parked: </strong> {{ billdata.parkingts }}</p>
+                <p><strong>Vacated: </strong> {{ billdata.leavingts }}</p>
+                <p><strong>Price per Hour:</strong> ₹{{ billdata.priceperhour }}</p>
+                <p><strong>Parking duration:</strong> {{ billdata.timetaken }}</p>
+                <p><strong>Price:</strong> ₹{{ billdata.price }}</p>
+                <button class="btn btn-secondary" @click="showbillview = false">Close</button>
+            </div>
         </div>
     </div>
 </template>

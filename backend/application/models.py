@@ -24,11 +24,13 @@ class Parkingspot(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     lotid = db.Column(db.Integer, db.ForeignKey('parkinglots.id'), nullable = False)
     status = db.Column(db.Boolean, nullable = False)
-    reservation = db.relationship('Reservation', backref = 'parkingspot', lazy = True)
 
 class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key = True)
-    spotid = db.Column(db.Integer, db.ForeignKey('parkingspot.id'), nullable = False)
+    lotid = db.Column(db.Integer, nullable = False)
+    spotid = db.Column(db.Integer, nullable = False)
+    priceperhour = db.Column(db.Integer, nullable = False)
+    address = db.Column(db.String(), nullable = False)
     userid = db.Column(db.Integer, db.ForeignKey('users.id'), nullable = False)
     parkingts = db.Column(db.DateTime, nullable = False)
     leavingts = db.Column(db.DateTime)
