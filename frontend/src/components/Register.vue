@@ -19,6 +19,10 @@ export default{
             event.preventDefault()
             this.successmsg = ""
             this.errormsg = ""
+            if (!this.formdata.email || !this.formdata.username || !this.formdata.password || !this.formdata.phone_no || !this.formdata.confirmpassword) {
+                this.errormsg = "Please enter all fields!"
+                return
+            }
             if (this.formdata.password != this.formdata.confirmpassword){
                 this.errormsg = "Passwords do not match!!"
                 return

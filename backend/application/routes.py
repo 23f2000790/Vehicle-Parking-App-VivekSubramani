@@ -354,6 +354,20 @@ def bill():
     }
     return jsonify({"billdata" : res_obj}), 201
 
+
+@app.route('/api/viewspot')
+@jwt_required()
+def viewspot():
+    spotid = request.args.get("id")
+    res = Reservation.query.filter_by(spotid=spotid, status= 1).first()
+    output_obj = {
+        "spotid": res.spotid,
+        "vehiclename": res.vehiclename,
+        "vehiclenp": res.vehiclenp,
+        "parkingts": res.parkingts
+    }
+    user = Users.query.filter_by(id = res.userid).first()
+    return jsonify({"spotdata": output_obj, "username" : user.username}), 201
     
 
 

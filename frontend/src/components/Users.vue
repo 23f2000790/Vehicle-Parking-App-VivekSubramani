@@ -84,6 +84,7 @@ export default {
     <div v-if="role == 'admin'">
         <div class="d-flex">
             <div class="sidebar bg-dark text-white p-3">
+                <p><strong>Welcome,&ensp;Admin</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
@@ -113,7 +114,7 @@ export default {
                                 <button :class="user.status ? 'Active rounded-3' : 'Unauthorized rounded-3'" @click="askagain(user)">
                                     {{ user.status ? "Active" : "Unauthorized" }}
                                 </button> &ensp;
-                                <button v-if="user.status == true && user.reservations.length > 0" class="btn btn-primary" @click="userres(user)">Reservations</button>
+                                <button v-if="user.reservations.length > 0" class="btn btn-primary" @click="userres(user)">Reservations</button>
                             </td>
                         </tr>
                     </tbody>

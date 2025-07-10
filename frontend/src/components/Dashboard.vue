@@ -22,7 +22,10 @@ export default {
             openbookingform: false,
             searchword: "",
             billdata: {},
-            showbillview: false
+            showbillview: false,
+            spotdata: {},
+            showspotdata: false,
+            spotuser: ""
         }
     },
     mounted(){
@@ -75,7 +78,8 @@ export default {
             this.formdata = {cityname: "", address: "", pincode: "", maxspots: "", priceperhour: "", status: ""}
         },
         sendlot: function(){
-            this.errormsg = ""
+            this.errormsg = "";
+            this.successmsg = "";
             if (typeof this.formdata.status === "boolean") {
                 this.formdata.status = this.formdata.status ? "active" : "inactive";
             }
@@ -215,6 +219,22 @@ export default {
                 this.billdata = res.data.billdata;
                 this.showbillview = true;
             })
+        },
+        viewspot: function(spotid) {
+            this.spotdata = {};
+            this.spotuser = "";
+            axios.get("http://127.0.0.1:5000/api/viewspot", {
+                params: {id: spotid},
+                headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin" : "*",
+                "Authorization": `Bearer ${this.token}`   
+                }}
+            ).then(res => {
+                this.spotdata = res.data.spotdata;
+                this.spotuser = res.data.username;
+                this.showspotdata = true;
+            })
         }
     }
 }
@@ -350,7 +370,7 @@ export default {
 
         <div v-else class="d-flex">
             <div class="sidebar bg-dark text-white p-3">
-                <p><strong>Welcome, {{ this.username }}</strong></p>
+                <p><strong>Welcome,&ensp;Admin</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
@@ -374,9 +394,17 @@ export default {
                     </p>
 
                     <div class="d-flex flex-wrap justify-content-center gap-2">
-                        <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
-                        {{ spotId }}
+                        <div v-for="(status, spotid) in lot.status_dict" :key="spotid">
+                            <div v-if="status == true" @click="viewspot(spotid)">    
+                                <button class="spot occupied">{{ spotid }}</button>
+                            </div>
+                            <div v-else class="spot available">
+                                {{ spotid }}
+                            </div>
                         </div>
+                        <!-- <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
+                        {{ spotId }}
+                        </div> -->
                     </div>
                     </div>
                 </div>
@@ -439,6 +467,16 @@ export default {
                         <p><strong>Price per Hour:</strong> ₹{{ formdata.priceperhour }}</p>
                         <p><strong>Status:</strong> {{ formdata.status }}</p>
                         <button class="btn btn-secondary" @click="viewlotdetail = false">Close</button>
+                    </div>
+                </div>
+                <div v-if="showspotdata" class="modal-backdrop">
+                    <div class="modal-content">
+                        <h5><strong>Spot Id - {{ spotdata.spotid }}</strong></h5>
+                        <p><strong>Occupied by:</strong> {{ spotuser }}</p>
+                        <p><strong>Vehicle:</strong> {{ spotdata.vehiclename }}</p>
+                        <p><strong>Vehicle Number:</strong> {{ spotdata.vehiclenp }}</p>
+                        <p><strong>Parked At:</strong> {{ spotdata.parkingts }}</p>
+                        <button class="btn btn-secondary" @click="showspotdata = false">Close</button>
                     </div>
                 </div>
             </div>
