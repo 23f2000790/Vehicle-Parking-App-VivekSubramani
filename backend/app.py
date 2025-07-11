@@ -5,6 +5,7 @@ from application.config import LocalDevelopmentConfig
 from application.models import Users
 from werkzeug.security import generate_password_hash
 from flask_cors import CORS
+from application.celery_init import celery_init_app
 
 app = None
 
@@ -20,6 +21,7 @@ def create_app():
     return app
 
 app = create_app()
+celery = celery_init_app(app)
 from application.routes import *
 
 if __name__ == '__main__':

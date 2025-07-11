@@ -6,6 +6,8 @@ from .database import db
 from datetime import datetime, timezone
 from functools import wraps
 from sqlalchemy import or_
+from celery.result import AsyncResult
+from .tasks import csv_report
 
 
 
@@ -371,6 +373,23 @@ def viewspot():
     return jsonify({"spotdata": output_obj, "username" : user.username}), 201
     
 
+@app.route('/api/exportcsv')
+def exportcsv():
+    result = csv_report.delay()
+    return jsonify({
+        "id": result.id,
+        "result": result.result
+    })
+
+
+@app.route('/api/csv_result/<id>')
+def csv_result(id):
+    result = AsyncResult(id)
+    return {
+        "ready": result.ready(),
+        "successful": result.successful(),
+        "value": result.result if result.ready() else None
+    }
 
 
 
