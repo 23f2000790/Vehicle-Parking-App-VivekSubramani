@@ -228,7 +228,8 @@ def bookspot():
     spot2.status = 1
     db.session.add(reserve)
     db.session.commit()
-    return jsonify({"msg" : "Spot booked successfully"}), 201
+    msg = "Spot #"+str(spot.id)+"is your allocated spot"
+    return jsonify({"msg" : msg}), 201
 
 
 @app.route('/api/users')
