@@ -22,6 +22,8 @@ def create_app():
 
 app = create_app()
 celery = celery_init_app(app)
+celery.autodiscover_tasks()
+
 from application.routes import *
 
 if __name__ == '__main__':

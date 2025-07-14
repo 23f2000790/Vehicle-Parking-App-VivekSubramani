@@ -1,4 +1,4 @@
-from flask import current_app as app, jsonify, request
+from flask import current_app as app, jsonify, request, send_from_directory
 from flask_jwt_extended import create_access_token, jwt_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from .models import *
@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from functools import wraps
 from sqlalchemy import or_
 from celery.result import AsyncResult
-from .tasks import csv_report
+from .tasks import csv_report, monthly_report, generate_msg
 
 
 
@@ -373,23 +373,25 @@ def viewspot():
     return jsonify({"spotdata": output_obj, "username" : user.username}), 201
     
 
-@app.route('/api/exportcsv')
+@app.route('/exportcsv')
 def exportcsv():
     result = csv_report.delay()
-    return jsonify({
+    return {
         "id": result.id,
         "result": result.result
-    })
+    }
 
 
 @app.route('/api/csv_result/<id>')
 def csv_result(id):
     result = AsyncResult(id)
-    return {
-        "ready": result.ready(),
-        "successful": result.successful(),
-        "value": result.result if result.ready() else None
-    }
+    return send_from_directory('static', result.result)
+
+
+@app.route('/api/send_mail')
+def send_mail():
+    result = monthly_report.delay()
+    return {"message": result.result}
 
 
 
