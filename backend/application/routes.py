@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from functools import wraps
 from sqlalchemy import or_
 from celery.result import AsyncResult
-from .tasks import csv_report, monthly_report, generate_msg
+from .tasks import csv_report, monthly_report, generate_msg, vacatespot_msg
 
 
 
@@ -19,11 +19,15 @@ def register():
     phone_no = request.json.get('phone_no')
 
     users = Users.query.filter((Users.username == username) | (Users.email == email)).first()
+    if len(password) < 8:
+        return jsonify({"msg":"Length of password should be atleast 8!"}), 409
     if users:
         return jsonify({"msg":"User already exists!"}), 409
     phone_check = Users.query.filter_by(phone_no=phone_no).first()
     if phone_check:
         return jsonify({"msg":"This phone number already exists!"}), 409
+    if len(phone_no) != 10:
+        return jsonify({"msg": "Invalid Phone number!"}), 409
     hashpass = generate_password_hash(password)
     newuser = Users(email=email, username=username, password=hashpass, phone_no=phone_no, status=True)
     db.session.add(newuser)
@@ -230,7 +234,8 @@ def bookspot():
     spot2.status = 1
     db.session.add(reserve)
     db.session.commit()
-    msg = "Spot #"+str(spot.id)+"is your allocated spot"
+    res = generate_msg.delay(current_user.username, reserve.id, request.json.get("vehiclename"), spot.id, spot.parkinglots.address)
+    msg = "Spot #"+str(spot.id)+" is your allocated spot"
     return jsonify({"msg" : msg}), 201
 
 
@@ -304,6 +309,7 @@ def vacatespot():
     res.status = 0
     spot.status = 0
     db.session.commit()
+    res = vacatespot_msg.delay(current_user.username, res.address, res.vehiclename, res.parkingts, res.leavingts, res.price)
     return jsonify({"msg":"Spot Vacated Successfully"}),201
 
 
@@ -374,8 +380,9 @@ def viewspot():
     
 
 @app.route('/exportcsv')
+@jwt_required()
 def exportcsv():
-    result = csv_report.delay()
+    result = csv_report.delay(current_user.id)
     return {
         "id": result.id,
         "result": result.result
@@ -385,7 +392,11 @@ def exportcsv():
 @app.route('/api/csv_result/<id>')
 def csv_result(id):
     result = AsyncResult(id)
-    return send_from_directory('static', result.result)
+    if result.ready():
+        filename = result.result
+        return send_from_directory('static', filename, as_attachment=True)
+    else:
+        return jsonify({"error": "CSV not ready"}), 202
 
 
 @app.route('/api/send_mail')

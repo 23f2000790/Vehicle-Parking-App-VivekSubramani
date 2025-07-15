@@ -8,8 +8,8 @@ import requests
 
 
 @shared_task(ignore_results = False, name = "download_csv_report")
-def csv_report():
-    user_details = Reservation.query.all()
+def csv_report(id):
+    user_details = Reservation.query.filter_by(userid=id).all()
     csv_file_name = f"card_{datetime.datetime.now().strftime('%s')}.csv"
     with open(f'static/{csv_file_name}', 'w', newline="") as csvfile:
         sr_no = 1
@@ -54,14 +54,23 @@ def monthly_report():
                 <th>Vehicle</th>
                 <th>Vechile No.</th>
             </tr>
-            {% for i in user_data.details %}
-            <tr>
-                <td>{{ i.address }}</td>
-                <td>{{ i.spotid }}</td>
-                <td>{{ i.vehiclename }}</td>
-                <td>{{ i.vehiclenp }}</td>
-            </tr>
-            {% endfor %}
+            {% if user_data.details %}
+                {% for i in user_data.details %}
+                <tr>
+                    <td>{{ i.address }}</td>
+                    <td>{{ i.spotid }}</td>
+                    <td>{{ i.vehiclename }}</td>
+                    <td>{{ i.vehiclenp }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+            {% endif %}
         </table>
         <br>
         <p>Regards,<br>Vehicle Parking App</p>
@@ -79,14 +88,26 @@ def monthly_report():
 
 
 @shared_task(ignore_results=False, name="generate_msg")
-def generate_msg(username, cardname):
-    text = f"Hi {username}, your card '{cardname}' has been generated. Please check the app at http://127.0.0.1:5173"
+def generate_msg(username, resid, vehiclename, spotid, address):
+    text = f"Hi {username}, Your reservation ID is '{resid}' for parking {vehiclename}, at spot '{spotid}' in {address}. Please check the app at http://127.0.0.1:5173"
     
     response = requests.post(
-        "https://chat.googleapis.com/v1/spaces/AAAAMGxFsof/messages?key=API_KEY&token=TOKEN",
+        "https://chat.googleapis.com/v1/spaces/AAQABHeiZ98/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=tTHaFINhF_lz2yCpcr7CzOh38Fy0y8OAd_epXMCUec0",
         json={"text": text}
     )
     
     print(response.status_code)
-    return "The delivery is sent to user"
+    return "Spot is booked"
 
+
+@shared_task(ignore_Results=False, name="vacatespot_msg")
+def vacatespot_msg(username, address, vehiclename, parkingts, leavingts, price):
+    text = f"Hi {username}, Thanks for visiting {address}. Your reservation for {vehiclename}, from {parkingts} to {leavingts} is successfully completed. Please pay {price} at the counter. Visit Again!!"
+    
+    response = requests.post(
+        "https://chat.googleapis.com/v1/spaces/AAQABHeiZ98/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=tTHaFINhF_lz2yCpcr7CzOh38Fy0y8OAd_epXMCUec0",
+        json={"text": text}
+    )
+    
+    print(response.status_code)
+    return "Spot is Vacated"

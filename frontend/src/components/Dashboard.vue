@@ -235,6 +235,26 @@ export default {
                 this.spotuser = res.data.username;
                 this.showspotdata = true;
             })
+        },
+        downloadCSV: function() {
+            axios.get('http://127.0.0.1:5000/exportcsv',{
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+            })
+                .then(response => {
+                    const id = response.data.id;
+
+                    // wait 2 seconds (or use polling for better UX)
+                    setTimeout(() => {
+                        window.location.href = `http://127.0.0.1:5000/api/csv_result/${id}`; 
+
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error("Error exporting CSV:", err);
+                    alert("Failed to generate CSV.");
+                });
         }
     }
 }
@@ -248,6 +268,7 @@ export default {
             <p><strong>Welcome, {{ this.username }}</strong></p>
             <RouterLink class="d-block mb-2 text-white" @click="loaduser()" to="/dashboard">Home</RouterLink>
             <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
+            <button @click="downloadCSV()">Download CSV</button>
             </div>
             <div class="flex-grow-1 p-3">
                 <div style="background-color: #e0f0ff; margin: 10px; padding: 20px; border-radius: 8px;">
