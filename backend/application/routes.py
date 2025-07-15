@@ -8,6 +8,7 @@ from functools import wraps
 from sqlalchemy import or_
 from celery.result import AsyncResult
 from .tasks import csv_report, monthly_report, generate_msg, vacatespot_msg
+from .caching import cache
 
 
 
@@ -33,6 +34,7 @@ def register():
     db.session.add(newuser)
     db.session.commit()
 
+    cache.delete('user_data')
     return jsonify({"msg":"Account created successfully, Please Login"}), 201
 
 
@@ -50,6 +52,8 @@ def login():
         return jsonify({"msg":"Account Unauthorized, Please contact Admin"}), 401
     
     access_token = create_access_token(identity = user)
+    cache.delete('dashboard_data')
+
     return jsonify(access_token = access_token)
 
 
@@ -66,6 +70,7 @@ def type_based_access(valid_type):
 
 @app.route('/api/dashboard')
 @jwt_required()
+@cache.cached(timeout=300, key_prefix='dashboard_data')
 def dashboard():
     if current_user.type == "admin":
         lots = Parkinglots.query.all()
@@ -157,6 +162,7 @@ def addlot():
         db.session.add(newspot)
     db.session.commit()
 
+    cache.delete('dashboard_data')
     return jsonify({"msg" : "Lot Added Successfully!!"}), 201
 
 
@@ -191,6 +197,7 @@ def editlot(lotid):
             db.session.add(newspot)
             
     db.session.commit()
+    cache.delete('dashboard_data')
     return jsonify({"msg" : "Lot edited successfully!!"}), 201
 
 
@@ -206,6 +213,7 @@ def deletelot(lotid):
         db.session.delete(i)
     db.session.delete(lot)
     db.session.commit()
+    cache.delete('dashboard_data')
     return jsonify({"msg" : "Lot deleted successfully!!"}), 201
 
 
@@ -236,11 +244,13 @@ def bookspot():
     db.session.commit()
     res = generate_msg.delay(current_user.username, reserve.id, request.json.get("vehiclename"), spot.id, spot.parkinglots.address)
     msg = "Spot #"+str(spot.id)+" is your allocated spot"
+    cache.delete('dashboard_data')
     return jsonify({"msg" : msg}), 201
 
 
 @app.route('/api/users')
 @jwt_required()
+@cache.cached(timeout=300, key_prefix='user_data')
 def users():
     users = Users.query.filter(Users.type == "user").all()
     role = current_user.type
@@ -285,6 +295,9 @@ def edituser():
     else:
         user.status = True
     db.session.commit()
+    cache.delete('dashboard_data')
+    cache.delete('user_data')
+
     return jsonify({"msg" : "Status Changed Successfully!!"}), 201
     
 
@@ -310,6 +323,7 @@ def vacatespot():
     spot.status = 0
     db.session.commit()
     res = vacatespot_msg.delay(current_user.username, res.address, res.vehiclename, res.parkingts, res.leavingts, res.price)
+    cache.delete('dashboard_data')
     return jsonify({"msg":"Spot Vacated Successfully"}),201
 
 
@@ -334,6 +348,7 @@ def search():
                     "pincode" : j.pincode
                 }
                 lot_output.append(output_dict)
+    cache.delete('dashboard_data')
     return jsonify({"searchres" : lot_output}), 201
 
 
@@ -361,6 +376,7 @@ def bill():
         "timetaken": final_time,
         "price" : res.price,
     }
+    
     return jsonify({"billdata" : res_obj}), 201
 
 
