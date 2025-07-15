@@ -20,8 +20,8 @@ def register():
     phone_no = request.json.get('phone_no')
 
     users = Users.query.filter((Users.username == username) | (Users.email == email)).first()
-    if len(password) < 8:
-        return jsonify({"msg":"Length of password should be atleast 8!"}), 409
+    if len(password) < 4:
+        return jsonify({"msg":"Length of password should be atleast 4!"}), 409
     if users:
         return jsonify({"msg":"User already exists!"}), 409
     phone_check = Users.query.filter_by(phone_no=phone_no).first()
@@ -153,7 +153,7 @@ def addlot():
     existaddress = Parkinglots.query.filter_by(address = address).first()
     if existaddress:
         return jsonify({"msg" : "Cannot add 2 lots at same address!!"}), 409
-    if int(pincode) != 6:
+    if len(pincode) != 6:
         return jsonify({"msg" : "Invalid Pincode!!"}), 409
     newlot = Parkinglots(cityname=cityname, address=address, pincode=pincode, maxspots=maxspots, priceperhour=priceperhour, status=status)
     db.session.add(newlot)
@@ -172,7 +172,37 @@ def addlot():
 @app.route('/api/editlot/<int:lotid>', methods = ['PUT'])
 @type_based_access('admin')
 def editlot(lotid):
+    spotoccupied = Parkingspot.query.filter_by(lotid = lotid, status = 1).all()
     lot = Parkinglots.query.get(lotid)
+    if len(spotoccupied) > 0:
+        newmaxspots = int(request.json.get('maxspots', lot.maxspots))
+        newpriceperhour = int(request.json.get("priceperhour", lot.priceperhour))
+        if newmaxspots < len(spotoccupied):
+            return jsonify({"msg" : "Please release the spots to update the maxspots"}), 403
+        
+        spots = Parkingspot.query.filter_by(lotid = lot.id).all()
+        if newmaxspots < len(spots):
+            for i in range((len(spots)-newmaxspots)):
+                spot = Parkingspot.query.filter_by(lotid = lot.id, status = 0).first()
+                db.session.delete(spot)
+
+        if newmaxspots > len(spots):
+            for i in range(newmaxspots-len(spots)):
+                newspot = Parkingspot(lotid = lot.id, status = 0)
+                db.session.add(newspot)
+        status_1 = request.json.get("status")
+        if status_1 is not None:
+            if status_1 == "active":
+                lot.status = True
+            else:
+                lot.status = False
+        lot.maxspots = newmaxspots
+        lot.priceperhour = newpriceperhour
+        db.session.commit()
+        cache.delete('dashboard_data')
+        return jsonify({"msg" : "Only maxspots and price/hour have been edited due to some occupied spots!!"}), 201
+    
+    lot.cityname = request.json.get("cityname", lot.cityname)
     lot.address = request.json.get("address", lot.address)
     lot.pincode = request.json.get('pincode', lot.pincode)
     lot.maxspots = request.json.get('maxspots', lot.maxspots)
@@ -186,12 +216,9 @@ def editlot(lotid):
     if request.json.get('pincode'):
         if len(request.json.get('pincode')) != 6:
             return jsonify({"msg" : "Invalid Pincode!!"}), 409
-
-    spotoccupied = Parkingspot.query.filter_by(lotid = lot.id, status = 1).all()
-    if int(lot.maxspots) < len(spotoccupied):
-        return jsonify({"msg" : "Please release the spots to update the maxspots"}), 403
-    
+        
     spots = Parkingspot.query.filter_by(lotid = lot.id).all()
+
     if int(lot.maxspots) < len(spots):
         for i in range((len(spots)-int(lot.maxspots))):
             spot = Parkingspot.query.filter_by(lotid = lot.id, status = 0).first()
@@ -201,7 +228,6 @@ def editlot(lotid):
         for i in range((int(lot.maxspots)-len(spots))):
             newspot = Parkingspot(lotid = lot.id, status = 0)
             db.session.add(newspot)
-            
     db.session.commit()
     cache.delete('dashboard_data')
     return jsonify({"msg" : "Lot edited successfully!!"}), 201
@@ -232,6 +258,8 @@ def bookspot():
     rescheck = Reservation.query.filter_by(vehiclenp = vehiclenp, status = 1).first()
     if rescheck:
         return jsonify({"msg" : "Vehicle with this number place is already parked in some other spot!!"}), 409
+    if len(vehiclenp) != 10:
+        return jsonify({"msg": "Invalid Vehicle Number!"})
     spot = Parkingspot.query.filter_by(lotid = lotid, status = 0).first()
     reserve = Reservation(
         lotid = lotid,
@@ -252,6 +280,7 @@ def bookspot():
     msg = "Spot #"+str(spot.id)+" is your allocated spot"
     cache.delete('dashboard_data')
     cache.delete('summary_data')
+    cache.delete('user_data')
     return jsonify({"msg" : msg}), 201
 
 
@@ -332,6 +361,7 @@ def vacatespot():
     res = vacatespot_msg.delay(current_user.username, res.address, res.vehiclename, res.parkingts, res.leavingts, res.price)
     cache.delete('dashboard_data')
     cache.delete('summary_data')
+    cache.delete('user_data')
     return jsonify({"msg":"Spot Vacated Successfully"}),201
 
 
@@ -462,6 +492,7 @@ def summary():
         lots = Parkinglots.query.count()
         spots = Parkingspot.query.count()
         return jsonify({
+            "username": current_user.username,
             "role": "admin",
             "lots": lots,
             "spots": spots,

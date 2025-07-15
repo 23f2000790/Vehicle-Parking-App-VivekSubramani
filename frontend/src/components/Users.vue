@@ -84,7 +84,7 @@ export default {
     <div v-if="role == 'admin'">
         <div class="d-flex">
             <div class="sidebar bg-dark text-white p-3">
-                <p><strong>Welcome,&ensp;Admin</strong></p>
+                <p><strong>Welcome,&ensp;admin</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
@@ -132,7 +132,7 @@ export default {
         </div>
         <div v-if="showrestab" class="modal-backdrop">
             <div class="d-flex justify-content-center">
-                <div class="modal-content">
+                <div class="modal-content-view">
                     <div class="table-responsive mt-3">
                         <table class="table table-bordered table-hover align-middle" style="width: auto;">
                             <thead class="table-light">
@@ -241,6 +241,8 @@ td, th {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 400px;
+  max-width: 180vh;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 </style>

@@ -34,6 +34,7 @@ onMounted(async () => {
         }})
     role.value = res.data.role
     if (res.data.role == "admin") {
+        username.value = res.data.username
         actusers.value = res.data.actusers
         unausers.value = res.data.unausers
         lots.value = res.data.lots
@@ -67,11 +68,11 @@ onMounted(async () => {
   <div v-if="!ready" class="loading-screen">
     <div class="spinner-border text-primary" role="status">
     <span class="visually-hidden">Loading...</span>
-  </div>
     </div>
+  </div>
   <div v-if="role == 'admin'" class="d-flex flex-row min-vh-100">
     <div class="sidebar text-white p-3">
-      <p><strong>Welcome,&ensp;Admin</strong></p>
+      <p><strong>Welcome,&ensp;{{ username }}</strong></p>
       <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
       <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
       <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>

@@ -57,7 +57,6 @@ export default {
                     this.reservationdata = res.data.resdata;
                     this.availablelotdata = res.data.lotdata;
                 }
-                
                
             })
         },
@@ -73,6 +72,7 @@ export default {
         },
         openaddlotform() {
             this.showaddlot = true;
+            this.editmode = false;
             this.errormsg = "";
             this.successmsg = "";
             this.formdata = {cityname: "", address: "", pincode: "", maxspots: "", priceperhour: "", status: ""}
@@ -90,9 +90,9 @@ export default {
                         "Access-Control-Allow-Origin" : "*",
                         "Authorization": `Bearer ${this.token}`
                     }}).then(res => {
-                        this.successmsg = res.data.msg;
-                        this.openaddlotform();
+                        alert(res.data.msg)
                         this.showaddlot = false;
+                        this.editmode = false;
                         this.loaduser()
                     }).catch(error => {
                         this.errormsg = error.response?.data?.msg
@@ -109,7 +109,8 @@ export default {
                         "Authorization": `Bearer ${this.token}`
                     }}
                 ).then(res => {
-                    this.successmsg = res.data.msg
+                    alert(res.data.msg)
+                    this.editmode = false;
                     this.showaddlot = false;
                     this.loaduser();
                 }).catch(error => {
@@ -123,7 +124,7 @@ export default {
             this.errormsg = "";
             axios.delete(`http://127.0.0.1:5000/api/deletelot/${lotid}`, { headers: {"Authorization": `Bearer ${this.token}`}}
             ).then(res => {
-                this.successmsg = res.data.msg;
+                alert(res.data.msg)
                 this.loaduser();
             }).catch(error => {
                 this.errormsg = error.response?.data?.msg
@@ -136,6 +137,7 @@ export default {
             this.editlotid = lot.lot_id;
             this.formdata = {cityname: lot.city, address: lot.address, pincode: lot.pincode, maxspots: lot.spots, priceperhour: lot.price, status: lot.status};
             this.showaddlot = true;
+            this.loaduser()
         },
         viewlot: function(lot) {
             this.lotid = lot.lot_id;
@@ -261,7 +263,7 @@ export default {
 
         <div v-if=" role == 'user' " class="d-flex">
             <div class="sidebar text-white p-3">
-            <p><strong>Welcome, {{ this.username }}</strong></p>
+            <p><strong>Welcome,&ensp;{{ this.username }}</strong></p>
             <RouterLink class="d-block mb-2 text-white" @click="loaduser()" to="/dashboard">Home</RouterLink>
             <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
             <p></p>
@@ -388,7 +390,7 @@ export default {
 
         <div v-else class="d-flex">
             <div class="sidebar bg-dark text-white p-3">
-                <p><strong>Welcome,&ensp;Admin</strong></p>
+                <p><strong>Welcome,&ensp;{{ this.username }}</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
@@ -430,7 +432,8 @@ export default {
                 </div>
                 <div v-if="showaddlot" class="modal-backdrop">
                     <div class="modal-content">
-                        <h1 class="text-center">Add new Lot</h1>
+                        <div v-if="editmode"><h1 class="text-center">Edit Lot</h1></div>
+                        <div v-else><h1 class="text-center">Add new Lot</h1></div>
                         <p v-if="errormsg" class="text-danger text-center">{{ errormsg }}</p>
                         <form @submit.prevent="sendlot">
                             <div class="mb-3">
