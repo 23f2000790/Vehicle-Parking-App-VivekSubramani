@@ -53,6 +53,7 @@ def login():
     
     access_token = create_access_token(identity = user)
     cache.delete('dashboard_data')
+    cache.delete('summary_data')
 
     return jsonify(access_token = access_token)
 
@@ -152,6 +153,8 @@ def addlot():
     existaddress = Parkinglots.query.filter_by(address = address).first()
     if existaddress:
         return jsonify({"msg" : "Cannot add 2 lots at same address!!"}), 409
+    if int(pincode) != 6:
+        return jsonify({"msg" : "Invalid Pincode!!"}), 409
     newlot = Parkinglots(cityname=cityname, address=address, pincode=pincode, maxspots=maxspots, priceperhour=priceperhour, status=status)
     db.session.add(newlot)
     db.session.commit()
@@ -180,6 +183,9 @@ def editlot(lotid):
             lot.status = True
         else:
             lot.status = False
+    if request.json.get('pincode'):
+        if len(request.json.get('pincode')) != 6:
+            return jsonify({"msg" : "Invalid Pincode!!"}), 409
 
     spotoccupied = Parkingspot.query.filter_by(lotid = lot.id, status = 1).all()
     if int(lot.maxspots) < len(spotoccupied):
@@ -245,6 +251,7 @@ def bookspot():
     res = generate_msg.delay(current_user.username, reserve.id, request.json.get("vehiclename"), spot.id, spot.parkinglots.address)
     msg = "Spot #"+str(spot.id)+" is your allocated spot"
     cache.delete('dashboard_data')
+    cache.delete('summary_data')
     return jsonify({"msg" : msg}), 201
 
 
@@ -297,7 +304,7 @@ def edituser():
     db.session.commit()
     cache.delete('dashboard_data')
     cache.delete('user_data')
-
+    cache.delete('summary_data')
     return jsonify({"msg" : "Status Changed Successfully!!"}), 201
     
 
@@ -324,6 +331,7 @@ def vacatespot():
     db.session.commit()
     res = vacatespot_msg.delay(current_user.username, res.address, res.vehiclename, res.parkingts, res.leavingts, res.price)
     cache.delete('dashboard_data')
+    cache.delete('summary_data')
     return jsonify({"msg":"Spot Vacated Successfully"}),201
 
 
@@ -421,9 +429,73 @@ def send_mail():
     return {"message": result.result}
 
 
+@app.route('/api/summary')
+@jwt_required()
+@cache.cached(timeout=300, key_prefix='summary_data')
+def summary():
+    if current_user.type == 'admin':
+        reservations = Reservation.query.all()
+        earning = 0
+        lot_data = {}
+        user_data = {}
+        for i in reservations:
+            if i.users.username in user_data:
+                user_data[i.users.username] += 1
+            else:
+                user_data[i.users.username] = 1
+            if i.price is not None:
+                earning += i.price
+                if i.address not in lot_data:
+                    lot_data[i.address] = i.price
+                else:
+                    lot_data[i.address] += i.price
 
+        profitable_lots = [{"label": address, "value": price} for address, price in lot_data.items()]
+        profitable_lots.sort(key=lambda x: x['value'], reverse=True)
+        profitable_lots = profitable_lots[:5]
 
+        frequent_users = [{"label": username, "value": frequency} for username, frequency in user_data.items()]
+        frequent_users.sort(key=lambda x: x['value'], reverse=True)
+        frequent_users = frequent_users[:5]
+        actusers = Users.query.filter_by(type = "user", status = 1).count()
+        unausers = Users.query.filter_by(type = "user", status = 0).count()
+        lots = Parkinglots.query.count()
+        spots = Parkingspot.query.count()
+        return jsonify({
+            "role": "admin",
+            "lots": lots,
+            "spots": spots,
+            "actusers": actusers,
+            "unausers": unausers,
+            "earning": earning,
+            "profitable_lots": profitable_lots,
+            "frequent_users": frequent_users
+        })
 
+    else:
+        reservations = Reservation.query.filter_by(userid = current_user.id).all()
+        money_spent = 0
+        activeres = 0
+        expiredres = 0
+        res_data = []
+
+        for i in reservations:
+            if i.price is not None:
+                money_spent += i.price
+                res_data.append({"label": i.address, "value": i.price, "date": i.parkingts.strftime("%Y-%m-%d %H:%M")})
+            if i.status:
+                activeres += 1
+            else:
+                expiredres += 1
+        
+        return jsonify({
+            "username": current_user.username,
+            "role": "user",
+            "money_spent": round(money_spent, 2),
+            "activeres": activeres,
+            "expiredres": expiredres,
+            "res_data": res_data
+        })
 
     
         

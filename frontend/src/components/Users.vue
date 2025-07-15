@@ -87,7 +87,7 @@ export default {
                 <p><strong>Welcome,&ensp;Admin</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
-                <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
+                <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
             </div>
             <div class="flex-grow-1 p-3">
                 <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
@@ -196,8 +196,14 @@ export default {
 
 <style scoped>
 .sidebar {
-  min-width: 200px;
-  height: 100vh;
+  min-width: 220px;
+  min-height: 100vh;
+  background-color: #212529;
+  padding: 1.5rem 1rem;
+  font-size: 1.1rem;
+}
+.sidebar a {
+  text-decoration: none;
 }
 .Active {
     background-color: green;

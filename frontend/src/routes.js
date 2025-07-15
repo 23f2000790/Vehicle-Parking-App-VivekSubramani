@@ -4,13 +4,15 @@ import Login from "./components/Login.vue";
 import Register from "./components/Register.vue";
 import Dashboard from "./components/Dashboard.vue";
 import Users from "./components/Users.vue";
+import Summary from "./components/Summary.vue";
 
 const routes = [
     { path: "/", component: Homepage },
     { path: "/login", component: Login },
     { path: "/register", component: Register },
     { path: "/dashboard", component: Dashboard },
-    { path: "/users", component: Users }
+    { path: "/users", component: Users },
+    { path: "/summary", component: Summary }
 ]
 
 export const router = createRouter({

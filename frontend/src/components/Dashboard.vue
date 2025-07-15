@@ -260,10 +260,10 @@ export default {
     <div v-if="token">
 
         <div v-if=" role == 'user' " class="d-flex">
-            <div class="sidebar bg-secondary text-white p-3">
+            <div class="sidebar text-white p-3">
             <p><strong>Welcome, {{ this.username }}</strong></p>
             <RouterLink class="d-block mb-2 text-white" @click="loaduser()" to="/dashboard">Home</RouterLink>
-            <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
+            <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
             <p></p>
             <button @click="downloadcsv()">Download Data</button>
             </div>
@@ -391,7 +391,7 @@ export default {
                 <p><strong>Welcome,&ensp;Admin</strong></p>
                 <RouterLink class="d-block mb-2 text-white" to="/dashboard">Home</RouterLink>
                 <RouterLink class="d-block mb-2 text-white" to="/users">Users</RouterLink>
-                <RouterLink class="d-block mb-2 text-white" to="/">Summary</RouterLink>
+                <RouterLink class="d-block mb-2 text-white" to="/summary">Summary</RouterLink>
             </div>
             <div class="flex-grow-1 p-3">
                 <div style="background-color: #e0f0ff; margin: 5px 10px 5px 10px; border-radius: 8px;">
@@ -420,9 +420,6 @@ export default {
                                 {{ spotid }}
                             </div>
                         </div>
-                        <!-- <div v-for="(status, spotId) in lot.status_dict" :key="spotId" :class="status ? 'spot occupied' : 'spot available'">
-                        {{ spotId }}
-                        </div> -->
                     </div>
                     </div>
                 </div>
@@ -551,7 +548,13 @@ export default {
   background-color: #f8caca;
 }
 .sidebar {
-  min-width: 200px;
-  height: 100vh;
+  min-width: 220px;
+  min-height: 100vh;
+  background-color: #212529;
+  padding: 1.5rem 1rem;
+  font-size: 1.1rem;
+}
+.sidebar a {
+  text-decoration: none;
 }
 </style>
